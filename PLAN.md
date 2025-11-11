@@ -11,17 +11,17 @@
 
 ### Phase 2: Token System & Visibility
 
+- [x] Fixed player position at classroom coordinates
+- [x] Interaction limited to cells within 3 cells of player
+- [x] Visual distinction for interactable vs non-interactable cells
+- [x] Cells can be clicked for game mechanics
+
+### Phase 3: Player & Interaction Range
+
 - [x] Token type with value property
 - [x] Deterministic spawning using Luck function
 - [x] Token contents visible without clicking (colored circles in cells)
 - [x] Consistent initial state across page loads
-
-### Phase 3: Player & Interaction Range
-
-- [ ] Fixed player position at classroom coordinates
-- [ ] Interaction limited to cells within 3 cells of player
-- [ ] Visual distinction for interactable vs non-interactable cells
-- [ ] Cells can be clicked for game mechanics
 
 ### Phase 4: Inventory System
 
