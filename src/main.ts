@@ -1,8 +1,4 @@
 // ===== IMPORTS & SETUP =====
-
-// Types and libraries for Leaflet map rendering and styling
-// Note: _leafletWorkaround is required due to Leaflet's missing icon issue in modules
-// @deno-types="npm:@types/leaflet"
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./_leafletWorkaround.ts";
@@ -10,61 +6,149 @@ import luck from "./_luck.ts";
 import "./style.css";
 
 // ===== CONSTANTS & CONFIGURATION =====
-
-// Fixed classroom location (Unit 2 at UCSC) - center of our grid coordinate system
-const CLASSROOM_LATLNG = L.latLng(36.997936938057016, -122.05703507501151);
-const CELL_SIZE = 1e-4; // Grid cell size in degrees
-const INTERACTION_RADIUS = 3; // Radius (in grid cells) around (0,0)
-const TOKEN_SPAWN_PROBABILITY = 0.15; // Token spawning probability (15% chance)
+const CONFIG = {
+  CLASSROOM_LATLNG: L.latLng(36.997936938057016, -122.05703507501151),
+  CELL_SIZE: 1e-4,
+  INTERACTION_RADIUS: 3,
+  TOKEN_SPAWN_PROBABILITY: 0.15,
+  WINNING_VALUE: 8,
+} as const;
 
 // ===== GAME STATE =====
+const gameState = {
+  playerInventory: null as Token | null,
+  collectedTokens: new Set<string>(),
+  placedTokens: new Map<string, Token>(),
+  gameWon: false,
+};
 
-// Player's single-slot inventory (can hold one token or be empty)
-let playerInventory: Token | null = null;
-
-// Track which cells have been collected (so tokens don't respawn)
-const collectedTokens = new Set<string>();
-
-// ===== UI ELEMENTS =====
-
-// Create inventory display panel
-const inventoryPanel = document.createElement("div");
-inventoryPanel.id = "inventory-panel";
-document.body.appendChild(inventoryPanel);
-updateInventoryUI(); // Initial UI setup
-
-// ===== TOKEN SYSTEM =====
-
-// Represents a collectible token with a numeric value
+// ===== TYPE DEFINITIONS =====
 interface Token {
   readonly value: number;
 }
-
-// Represents a cell in the latitude-longitude grid
 interface GridCoord {
-  readonly i: number; // north-south index
-  readonly j: number; // east-west index
+  readonly i: number;
+  readonly j: number;
 }
 
-// Helper to create a unique key for grid coordinates
-function coordToKey(coord: GridCoord): string {
-  return `${coord.i},${coord.j}`;
+// ===== UTILITY FUNCTIONS =====
+const coordToKey = (coord: GridCoord): string => `${coord.i},${coord.j}`;
+
+const getCellBounds = (coord: GridCoord): L.LatLngBounds =>
+  L.latLngBounds([
+    [
+      CONFIG.CLASSROOM_LATLNG.lat + coord.i * CONFIG.CELL_SIZE,
+      CONFIG.CLASSROOM_LATLNG.lng + coord.j * CONFIG.CELL_SIZE,
+    ],
+    [
+      CONFIG.CLASSROOM_LATLNG.lat + (coord.i + 1) * CONFIG.CELL_SIZE,
+      CONFIG.CLASSROOM_LATLNG.lng + (coord.j + 1) * CONFIG.CELL_SIZE,
+    ],
+  ]);
+
+const isInteractable = (coord: GridCoord): boolean =>
+  Math.abs(coord.i) <= CONFIG.INTERACTION_RADIUS &&
+  Math.abs(coord.j) <= CONFIG.INTERACTION_RADIUS;
+
+// ===== UI MANAGEMENT =====
+const invPanel = document.createElement("div");
+invPanel.id = "inventory-panel";
+document.body.appendChild(invPanel);
+
+function showNotification(message: string, duration = 3000): void {
+  const existing = document.getElementById("game-notification");
+  existing?.remove();
+
+  const notification = document.createElement("div");
+  notification.id = "game-notification";
+  notification.innerHTML = `
+    <div style="
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 8px;
+      text-align: center;
+      z-index: 10000;
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    ">
+      ${message}
+    </div>
+  `;
+  document.body.appendChild(notification);
+
+  setTimeout(() => notification.remove(), duration);
 }
 
-/*
- * Determines if a cell contains a token and returns it if present.
- * Uses deterministic hashing to ensure consistent spawning across sessions.
- */
-function getCellToken(coord: GridCoord): Token | null {
-  // Skip if this token was already collected
-  if (collectedTokens.has(coordToKey(coord))) {
-    return null;
+function updateInvUI(): void {
+  const panel = document.getElementById("inventory-panel");
+  if (!panel) return;
+
+  const { playerInventory } = gameState;
+  const status = playerInventory
+    ? `Holding token: ${playerInventory.value}. ${
+      playerInventory.value >= CONFIG.WINNING_VALUE
+        ? "🎉 YOU WIN!"
+        : "Click on tokens to combine or empty cells to place."
+    }`
+    : "Inventory empty. Click on tokens to collect.";
+
+  panel.innerHTML = `
+    <h3>Player Inventory</h3>
+    <div id="inventory-slot" class="${playerInventory ? "occupied" : "empty"}">
+      ${
+    playerInventory
+      ? `<div class="inventory-token">${playerInventory.value}</div>`
+      : "Empty"
   }
+    </div>
+    <div id="interaction-status">${status}</div>
+  `;
+}
+
+function showWinMsg(): void {
+  const winMessage = document.createElement("div");
+  winMessage.id = "win-message";
+  winMessage.innerHTML = `
+    <div style="
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.9);
+      color: white;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      z-index: 10000;
+      font-family: Arial, sans-serif;
+    ">
+      <h1 style="color: #4CAF50; margin: 0 0 20px 0;">🎉 YOU WIN! 🎉</h1>
+      <p style="font-size: 18px; margin: 0 0 15px 0;">
+        You successfully crafted a token of value ${CONFIG.WINNING_VALUE} or higher!
+      </p>
+      <p style="font-size: 14px; color: #ccc;">
+        Refresh the page to play again.
+      </p>
+    </div>
+  `;
+  document.body.appendChild(winMessage);
+}
+
+// ===== TOKEN SYSTEM =====
+function getCellToken(coord: GridCoord): Token | null {
+  const key = coordToKey(coord);
+
+  if (gameState.placedTokens.has(key)) return gameState.placedTokens.get(key)!;
+  if (gameState.collectedTokens.has(key)) return null;
 
   const spawnRoll = luck([coord.i, coord.j, "token"].toString());
-
-  if (spawnRoll < TOKEN_SPAWN_PROBABILITY) {
-    // Generate token value between 1-4 (powers of 2 for combining)
+  if (spawnRoll < CONFIG.TOKEN_SPAWN_PROBABILITY) {
     const value = Math.floor(luck([coord.i, coord.j, "value"].toString()) * 4) +
       1;
     return { value };
@@ -74,62 +158,108 @@ function getCellToken(coord: GridCoord): Token | null {
 }
 
 // ===== GAME MECHANICS =====
+function tokenCollection(
+  coord: GridCoord,
+  token: Token,
+  tokenMarker: L.Marker,
+): void {
+  gameState.playerInventory = token;
+  const key = coordToKey(coord);
 
-// Handles token interaction when a token is clicked
+  if (!gameState.placedTokens.has(key)) {
+    gameState.collectedTokens.add(key);
+  }
+  gameState.placedTokens.delete(key);
+
+  map.removeLayer(tokenMarker);
+  showNotification(`Collected token: ${token.value}`);
+  updateInvUI();
+  checkWin();
+}
+
+function tokenCombo(
+  coord: GridCoord,
+  token: Token,
+  tokenMarker: L.Marker,
+): void {
+  const newValue = token.value * 2;
+  const newToken: Token = { value: newValue };
+  const key = coordToKey(coord);
+
+  gameState.placedTokens.set(key, newToken);
+  map.removeLayer(tokenMarker);
+  drawToken(coord, newToken, getCellBounds(coord), isInteractable(coord));
+  gameState.playerInventory = null;
+
+  showNotification(`Combined tokens! Created value ${newValue}`);
+  updateInvUI();
+  checkWin();
+}
+
 function tokenInteraction(
   coord: GridCoord,
   token: Token,
   tokenMarker: L.Marker,
 ): void {
-  const isInteractable = Math.abs(coord.i) <= INTERACTION_RADIUS &&
-    Math.abs(coord.j) <= INTERACTION_RADIUS;
-
-  if (!isInteractable) {
-    console.log(`Token at (${coord.i},${coord.j}) is not in interaction range`);
+  if (gameState.gameWon) {
+    showNotification("Game completed! 🎉 Refresh to play again.");
     return;
   }
 
-  console.log(
-    `Interacting with token at (${coord.i},${coord.j}) - Value: ${token.value}`,
-  );
+  if (!isInteractable(coord)) {
+    showNotification("Move closer to interact with this token");
+    return;
+  }
 
-  if (!playerInventory) {
-    // Collect token into inventory
-    playerInventory = token;
-    collectedTokens.add(coordToKey(coord)); // Mark as collected
-    map.removeLayer(tokenMarker); // Remove token from map
-    console.log(`Collected token: ${token.value}`);
-    updateInventoryUI();
+  if (!gameState.playerInventory) {
+    tokenCollection(coord, token, tokenMarker);
+  } else if (gameState.playerInventory.value === token.value) {
+    tokenCombo(coord, token, tokenMarker);
   } else {
-    // Already holding a token - could combine or swap (Phase 5)
-    console.log(
-      `Already holding token: ${playerInventory.value}. Cannot collect ${token.value} yet.`,
+    showNotification(
+      `Cannot combine: holding ${gameState.playerInventory.value}, clicked ${token.value}`,
     );
   }
 }
 
-// ===== GRID SYSTEM =====
+function isEmptyCell(coord: GridCoord): void {
+  if (
+    gameState.gameWon || !gameState.playerInventory || !isInteractable(coord)
+  ) {
+    if (!isInteractable(coord)) {
+      showNotification("Move closer to place token here");
+    }
+    return;
+  }
 
-// Calculates the geographic bounds for a grid cell coordinate
-function getCellBounds(coord: GridCoord): L.LatLngBounds {
-  return L.latLngBounds([
-    [
-      CLASSROOM_LATLNG.lat + coord.i * CELL_SIZE,
-      CLASSROOM_LATLNG.lng + coord.j * CELL_SIZE,
-    ],
-    [
-      CLASSROOM_LATLNG.lat + (coord.i + 1) * CELL_SIZE,
-      CLASSROOM_LATLNG.lng + (coord.j + 1) * CELL_SIZE,
-    ],
-  ]);
+  gameState.placedTokens.set(coordToKey(coord), gameState.playerInventory);
+  gameState.playerInventory = null;
+
+  showNotification("Token placed on cell");
+  updateInvUI();
+  renderGrid();
 }
 
-/*
- * Gets all grid coordinates currently visible in the map viewport.
- * Maps real-world lat/lng bounds to integer grid indices centered at (0,0).
- */
+function checkWin(): void {
+  if (gameState.gameWon) return;
+
+  const hasWinningToken = (gameState.playerInventory &&
+    gameState.playerInventory.value >= CONFIG.WINNING_VALUE) ||
+    Array.from(gameState.placedTokens.values()).some((token) =>
+      token.value >= CONFIG.WINNING_VALUE
+    );
+
+  if (hasWinningToken) {
+    gameState.gameWon = true;
+    showWinMsg();
+  }
+}
+
+// ===== GRID SYSTEM =====
 function getGridCoords(): GridCoord[] {
   const bounds = map.getBounds();
+  const { CLASSROOM_LATLNG, CELL_SIZE } = CONFIG;
+
   const iMin = Math.floor(
     (bounds.getSouthWest().lat - CLASSROOM_LATLNG.lat) / CELL_SIZE,
   );
@@ -149,106 +279,91 @@ function getGridCoords(): GridCoord[] {
       coords.push({ i, j });
     }
   }
-  console.log(`Visible cells: i=${iMin} to ${iMax}, j=${jMin} to ${jMax}`);
   return coords;
 }
 
-// ===== CELL RENDERING =====
-
-// Creates a visual grid cell background (non-interactive)
+// ===== RENDERING =====
 function drawGridCell(coord: GridCoord): void {
-  const isInteractable = Math.abs(coord.i) <= INTERACTION_RADIUS &&
-    Math.abs(coord.j) <= INTERACTION_RADIUS;
+  const interactable = isInteractable(coord);
+  const bounds = getCellBounds(coord);
+  const token = getCellToken(coord);
+  const key = coordToKey(coord);
 
-  const cellBounds = getCellBounds(coord);
-
-  const cell = L.rectangle(cellBounds, {
-    color: isInteractable ? "green" : "gray",
-    weight: isInteractable ? 2 : 1,
-    fillColor: isInteractable ? "lightgreen" : "lightgray",
+  const cell = L.rectangle(bounds, {
+    color: interactable ? "green" : "gray",
+    weight: interactable ? 2 : 1,
+    fillColor: interactable ? "lightgreen" : "lightgray",
     fillOpacity: 0.3,
     interactive: false,
   }).addTo(map);
 
-  const token = getCellToken(coord);
   const cellStatus = token
     ? `Contains token: ${token.value}`
-    : collectedTokens.has(coordToKey(coord))
+    : gameState.collectedTokens.has(key)
     ? "Token collected"
     : "Empty cell";
 
   cell.bindPopup(`
     Cell (${coord.i},${coord.j})<br>
-    ${isInteractable ? "🟢 Interactable Area" : "⚫ Not Interactable"}<br>
+    ${interactable ? "🟢 Interactable Area" : "⚫ Not Interactable"}<br>
     ${cellStatus}
   `);
 
-  // If cell has a token, draw it separately
-  if (token) {
-    drawToken(coord, token, cellBounds, isInteractable);
+  if (!token && interactable) {
+    cell.setStyle({ interactive: true });
+    cell.on("click", () => isEmptyCell(coord));
   }
+
+  if (token) drawToken(coord, token, bounds, interactable);
 }
 
-// Creates an interactive token marker at the specified location
 function drawToken(
   coord: GridCoord,
   token: Token,
-  cellBounds: L.LatLngBounds,
-  isInteractable: boolean,
+  bounds: L.LatLngBounds,
+  interactable: boolean,
 ): void {
-  const center = cellBounds.getCenter();
-  const tokenClass = isInteractable
-    ? "token-interactable"
-    : "token-non-interactable";
-
-  const tokenMarker = L.marker(center, {
+  const marker = L.marker(bounds.getCenter(), {
     icon: L.divIcon({
-      html: `<div class="token ${tokenClass}">${token.value}</div>`,
+      html: `<div class="token ${
+        interactable ? "token-interactable" : "token-non-interactable"
+      }">${token.value}</div>`,
       className: "token-marker",
       iconSize: [30, 30],
     }),
   }).addTo(map);
 
-  const popupContent = createTokenPopup(coord, token, isInteractable);
-  tokenMarker.bindPopup(popupContent);
-
-  tokenMarker.on("click", () => {
-    console.log(
-      `Token at (${coord.i},${coord.j}) clicked - Value: ${token.value}`,
-    );
-    tokenInteraction(coord, token, tokenMarker);
-  });
+  marker.bindPopup(tokenPopup(coord, token, interactable));
+  marker.on("click", () => tokenInteraction(coord, token, marker));
 }
 
-// Creates popup content for a token based on current game state
-function createTokenPopup(
+function tokenPopup(
   coord: GridCoord,
   token: Token,
-  isInteractable: boolean,
+  interactable: boolean,
 ): string {
   let actionText = "Move closer to interact";
 
-  if (isInteractable) {
-    if (playerInventory) {
-      actionText = playerInventory.value === token.value
+  if (interactable && !gameState.gameWon) {
+    if (gameState.playerInventory) {
+      actionText = gameState.playerInventory.value === token.value
         ? "Click to combine tokens!"
         : "Click to collect token!";
     } else {
       actionText = "Click to collect token!";
     }
+  } else if (gameState.gameWon) {
+    actionText = "Game completed! 🎉";
   }
 
   return `
     <strong>Token at (${coord.i},${coord.j})</strong><br>
     Value: ${token.value}<br>
-    Status: ${isInteractable ? "🟢 Interactable" : "⚫ Not Interactable"}<br>
+    Status: ${interactable ? "🟢 Interactable" : "⚫ Not Interactable"}<br>
     <em>${actionText}</em>
   `;
 }
 
-// ===== GRID MANAGEMENT =====
-
-// Removes all previously drawn grid cells and tokens from the map.
 function clearCells(): void {
   map.eachLayer((layer) => {
     if (
@@ -261,69 +376,33 @@ function clearCells(): void {
   });
 }
 
-/*
- * Re-renders the entire visible grid.
- * Called initially and whenever the map moves (pan/zoom).
- */
 function renderGrid(): void {
-  console.log("Drawing visible grid cells");
   clearCells();
   const visibleCoords = getGridCoords();
   visibleCoords.forEach(drawGridCell);
   console.log(`Drew ${visibleCoords.length} grid cells`);
 }
 
-// Updates the inventory UI to reflect current player inventory state
-function updateInventoryUI(): void {
-  const inventoryPanel = document.getElementById("inventory-panel");
-  if (!inventoryPanel) return;
+// ===== INITIALIZATION =====
+const map = L.map("map").setView(CONFIG.CLASSROOM_LATLNG, 19);
 
-  inventoryPanel.innerHTML = `
-    <h3>Player Inventory</h3>
-    <div id="inventory-slot" class="${playerInventory ? "occupied" : "empty"}">
-      ${
-    playerInventory
-      ? `<div class="inventory-token">${playerInventory.value}</div>`
-      : "Empty"
-  }
-    </div>
-    <div id="interaction-status">
-      ${
-    playerInventory
-      ? `Holding token: ${playerInventory.value}. Click on tokens to combine.`
-      : "Inventory empty. Click on tokens to collect."
-  }
-    </div>
-  `;
-}
-
-// ===== MAP INITIALIZATION =====
-
-// Initialize the Leaflet map, set view to classroom, zoom level for building-scale view
-const map = L.map("map").setView(CLASSROOM_LATLNG, 19);
-
-// Add OpenStreetMap tile layer as background
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
   attribution:
     '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 }).addTo(map);
 
-// Add player marker at classroom location
-const playerMarker = L.marker(CLASSROOM_LATLNG, {
+L.marker(CONFIG.CLASSROOM_LATLNG, {
   icon: L.divIcon({
     html: `<div class="player-marker">YOU</div>`,
     className: "player-marker-container",
     iconSize: [40, 40],
   }),
-}).addTo(map);
-playerMarker.bindPopup(
+}).addTo(map).bindPopup(
   "Player Location - Center (0,0)<br>Interaction Radius: 3 cells",
 );
 
-// Initial render
+// Initial setup
+updateInvUI();
 renderGrid();
-
-// Re-render grid when map moves or zooms
-map.on("moveend", renderGrid);
-map.on("zoomend", renderGrid);
+map.on("moveend", renderGrid).on("zoomend", renderGrid);

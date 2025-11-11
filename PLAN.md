@@ -32,10 +32,10 @@
 
 ### Phase 5: Crafting & Win Condition
 
-- [ ] Place token onto cell with equal value to combine (2x value)
-- [ ] Detect when player holds token of sufficient value (e.g., 8 or 16)
-- [ ] Win condition detection and message
-- [ ] Complete gameplay flow: collect -> combine -> win
+- [x] Place token onto cell with equal value to combine (2x value)
+- [x] Detect when player holds token of sufficient value (e.g., 8 or 16)
+- [x] Win condition detection and message
+- [x] Complete gameplay flow: collect -> combine -> win
 
 ## D3.b: Globe-spanning gameplay
 

@@ -122,3 +122,31 @@ html, body {
   font-size: 14px;
   color: white;
 }
+
+/* Game Notifications */
+#game-notification {
+  pointer-events: none; /* Allow clicks to pass through */
+}
+
+#game-notification div {
+  animation: fadeInOut 3s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  15% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  85% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+}
