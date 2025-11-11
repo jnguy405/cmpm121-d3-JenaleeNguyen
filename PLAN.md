@@ -25,10 +25,10 @@
 
 ### Phase 4: Inventory System
 
-- [ ] Single-slot inventory (holds one token or null)
-- [ ] Pick up token (removes from cell, adds to inventory)
-- [ ] Clear inventory display on screen
-- [ ] Inventory state visible to player
+- [x] Single-slot inventory (holds one token or null)
+- [x] Pick up token (removes from cell, adds to inventory)
+- [x] Clear inventory display on screen
+- [x] Inventory state visible to player
 
 ### Phase 5: Crafting & Win Condition
 
