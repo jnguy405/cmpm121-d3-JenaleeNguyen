@@ -1,12 +1,16 @@
-#controlPanel {
-  padding: 1rem;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-#statusPanel {
-  padding: 1rem;
+html, body {
+  height: 100%;
+  width: 100%;
 }
 
 #map {
-  width: 100%;
-  height: 80vh;
+  height: 100vh;
+  width: 100vw;
+  background-color: lightgray; /* Temporary to see if CSS loads */
 }

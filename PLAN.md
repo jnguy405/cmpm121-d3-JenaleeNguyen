@@ -4,10 +4,10 @@
 
 ### Phase 1: Map & Grid Foundation
 
-- [ ] Leaflet map centered on classroom location
-- [ ] Grid cells (0.0001 degrees) rendered on map
-- [ ] Cells visible without clicking (semi-transparent rectangles)
-- [ ] Cells cover entire visible map area
+- [x] Leaflet map centered on classroom location
+- [x] Grid cells (0.0001 degrees) rendered on map
+- [x] Cells visible without clicking (semi-transparent rectangles)
+- [x] Cells cover entire visible map area
 
 ### Phase 2: Token System & Visibility
 
