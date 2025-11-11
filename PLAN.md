@@ -11,10 +11,10 @@
 
 ### Phase 2: Token System & Visibility
 
-- [ ] Token type with value property
-- [ ] Deterministic spawning using Luck function
-- [ ] Token contents visible without clicking (colored circles in cells)
-- [ ] Consistent initial state across page loads
+- [x] Token type with value property
+- [x] Deterministic spawning using Luck function
+- [x] Token contents visible without clicking (colored circles in cells)
+- [x] Consistent initial state across page loads
 
 ### Phase 3: Player & Interaction Range
 
