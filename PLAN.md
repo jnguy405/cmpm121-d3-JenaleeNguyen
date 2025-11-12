@@ -50,10 +50,10 @@
 
 ### Phase 6: Player Movement System
 
-- [ ] Add movement buttons (N/S/E/W) to control panel
-- [ ] Implement movable player position (separate from map view)
-- [ ] Update interaction range based on current player position
-- [ ] Make player marker move with button controls
+- [x] Add movement buttons (N/S/E/W) to control panel
+- [x] Implement movable player position (separate from map view)
+- [x] Update interaction range based on current player position
+- [x] Make player marker move with button controls
 
 ### Phase 7: Memoryless Cell Behavior
 

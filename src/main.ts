@@ -20,6 +20,7 @@ const gameState = {
   collectedTokens: new Set<string>(),
   placedTokens: new Map<string, Token>(),
   gameWon: false,
+  playerPosition: { i: 0, j: 0 },
 };
 
 // ===== TYPE DEFINITIONS =====
@@ -47,13 +48,30 @@ const getCellBounds = (coord: GridCoord): L.LatLngBounds =>
   ]);
 
 const isInteractable = (coord: GridCoord): boolean =>
-  Math.abs(coord.i) <= CONFIG.INTERACTION_RADIUS &&
-  Math.abs(coord.j) <= CONFIG.INTERACTION_RADIUS;
+  Math.abs(coord.i - gameState.playerPosition.i) <= CONFIG.INTERACTION_RADIUS &&
+  Math.abs(coord.j - gameState.playerPosition.j) <= CONFIG.INTERACTION_RADIUS;
 
 // ===== UI MANAGEMENT =====
 const invPanel = document.createElement("div");
 invPanel.id = "inventory-panel";
 document.body.appendChild(invPanel);
+
+// Movement control panel
+const controlPanel = document.createElement("div");
+controlPanel.id = "control-panel";
+controlPanel.innerHTML = `
+  <h3>Movement Controls</h3>
+  <div class="movement-buttons">
+    <button id="move-north">↑ North</button>
+    <div>
+      <button id="move-west">← West</button>
+      <button id="move-east">East →</button>
+    </div>
+    <button id="move-south">↓ South</button>
+  </div>
+  <div id="player-position">Position: (0, 0)</div>
+`;
+document.body.appendChild(controlPanel);
 
 function showNotification(message: string, duration = 3000): void {
   const existing = document.getElementById("game-notification");
@@ -109,6 +127,39 @@ function updateInvUI(): void {
     </div>
     <div id="interaction-status">${status}</div>
   `;
+}
+
+function updatePlayerPos(): void {
+  const posDisplay = document.getElementById("player-position");
+  if (posDisplay) {
+    posDisplay.textContent =
+      `Position: (${gameState.playerPosition.i}, ${gameState.playerPosition.j})`;
+  }
+}
+
+function movePlayer(deltaI: number, deltaJ: number): void {
+  if (gameState.gameWon) {
+    showNotification("Game completed! Movement disabled.");
+    return;
+  }
+
+  gameState.playerPosition.i += deltaI;
+  gameState.playerPosition.j += deltaJ;
+
+  // Update player marker position
+  const newLatLng = L.latLng(
+    CONFIG.CLASSROOM_LATLNG.lat +
+      gameState.playerPosition.i * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2,
+    CONFIG.CLASSROOM_LATLNG.lng +
+      gameState.playerPosition.j * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2,
+  );
+  playerMarker.setLatLng(newLatLng);
+
+  updatePlayerPos();
+  showNotification(
+    `Moved to (${gameState.playerPosition.i}, ${gameState.playerPosition.j})`,
+  );
+  renderGrid();
 }
 
 function showWinMsg(): void {
@@ -392,17 +443,37 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 }).addTo(map);
 
-L.marker(CONFIG.CLASSROOM_LATLNG, {
+const playerMarker = L.marker(CONFIG.CLASSROOM_LATLNG, {
   icon: L.divIcon({
     html: `<div class="player-marker">YOU</div>`,
     className: "player-marker-container",
     iconSize: [40, 40],
   }),
-}).addTo(map).bindPopup(
-  "Player Location - Center (0,0)<br>Interaction Radius: 3 cells",
+}).addTo(map);
+playerMarker.bindPopup(
+  `Player Location - Center (${gameState.playerPosition.i},${gameState.playerPosition.j})<br>Interaction Radius: ${CONFIG.INTERACTION_RADIUS} cells`,
+);
+
+// Movement button event listeners
+document.getElementById("move-north")?.addEventListener(
+  "click",
+  () => movePlayer(-1, 0),
+);
+document.getElementById("move-south")?.addEventListener(
+  "click",
+  () => movePlayer(1, 0),
+);
+document.getElementById("move-east")?.addEventListener(
+  "click",
+  () => movePlayer(0, 1),
+);
+document.getElementById("move-west")?.addEventListener(
+  "click",
+  () => movePlayer(0, -1),
 );
 
 // Initial setup
 updateInvUI();
+updatePlayerPos();
 renderGrid();
 map.on("moveend", renderGrid).on("zoomend", renderGrid);
