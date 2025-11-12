@@ -112,9 +112,9 @@ function updateInvUI(): void {
 }
 
 function showWinMsg(): void {
-  const winMessage = document.createElement("div");
-  winMessage.id = "win-message";
-  winMessage.innerHTML = `
+  const winMsg = document.createElement("div");
+  winMsg.id = "win-message";
+  winMsg.innerHTML = `
     <div style="
       position: fixed;
       top: 50%;
@@ -137,7 +137,7 @@ function showWinMsg(): void {
       </p>
     </div>
   `;
-  document.body.appendChild(winMessage);
+  document.body.appendChild(winMsg);
 }
 
 // ===== TOKEN SYSTEM =====

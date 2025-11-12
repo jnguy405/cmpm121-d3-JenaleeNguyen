@@ -39,7 +39,35 @@
 
 ## D3.b: Globe-spanning gameplay
 
-- To be continued...
+### Already Implemented
+
+- [x] Cells spawn/despawn to keep screen full during map movement
+- [x] Player can scroll map without moving character, seeing cells everywhere
+- [x] Grid coordinate system using `GridCoord` interface
+- [x] `getCellBounds()` function for coordinate conversion
+- [x] `moveend` and `zoomend` events trigger grid updates
+- [x] Cells visible to edge of map during movement
+
+### Phase 6: Player Movement System
+
+- [ ] Add movement buttons (N/S/E/W) to control panel
+- [ ] Implement movable player position (separate from map view)
+- [ ] Update interaction range based on current player position
+- [ ] Make player marker move with button controls
+
+### Phase 7: Memoryless Cell Behavior
+
+- [ ] Remove token persistence when cells leave visibility
+- [ ] Implement token farming (cells reset when off-screen)
+- [ ] Remove `collectedTokens` tracking for D3.b
+- [ ] Test farming by moving in/out of cell ranges
+
+### Phase 8: Enhanced Victory & Global Coordinates
+
+- [ ] Switch to Null Island coordinate system (0,0)
+- [ ] Increase win condition threshold (e.g., 32 or 64)
+- [ ] Update coordinate calculations for global system
+- [ ] Test extended crafting with player movement
 
 ## D3.c: Object persistence
 
