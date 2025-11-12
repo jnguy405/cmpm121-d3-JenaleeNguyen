@@ -57,10 +57,10 @@
 
 ### Phase 7: Memoryless Cell Behavior
 
-- [ ] Remove token persistence when cells leave visibility
-- [ ] Implement token farming (cells reset when off-screen)
-- [ ] Remove `collectedTokens` tracking for D3.b
-- [ ] Test farming by moving in/out of cell ranges
+- [x] Remove token persistence when cells leave visibility
+- [x] Implement token farming (cells reset when off-screen)
+- [x] Remove `collectedTokens` tracking for D3.b
+- [x] Test farming by moving in/out of cell ranges
 
 ### Phase 8: Enhanced Victory & Global Coordinates
 

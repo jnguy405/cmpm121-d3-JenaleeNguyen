@@ -17,7 +17,6 @@ const CONFIG = {
 // ===== GAME STATE =====
 const gameState = {
   playerInventory: null as Token | null,
-  collectedTokens: new Set<string>(),
   placedTokens: new Map<string, Token>(),
   gameWon: false,
   playerPosition: { i: 0, j: 0 },
@@ -196,7 +195,6 @@ function getCellToken(coord: GridCoord): Token | null {
   const key = coordToKey(coord);
 
   if (gameState.placedTokens.has(key)) return gameState.placedTokens.get(key)!;
-  if (gameState.collectedTokens.has(key)) return null;
 
   const spawnRoll = luck([coord.i, coord.j, "token"].toString());
   if (spawnRoll < CONFIG.TOKEN_SPAWN_PROBABILITY) {
@@ -217,9 +215,6 @@ function tokenCollection(
   gameState.playerInventory = token;
   const key = coordToKey(coord);
 
-  if (!gameState.placedTokens.has(key)) {
-    gameState.collectedTokens.add(key);
-  }
   gameState.placedTokens.delete(key);
 
   map.removeLayer(tokenMarker);
@@ -338,7 +333,6 @@ function drawGridCell(coord: GridCoord): void {
   const interactable = isInteractable(coord);
   const bounds = getCellBounds(coord);
   const token = getCellToken(coord);
-  const key = coordToKey(coord);
 
   const cell = L.rectangle(bounds, {
     color: interactable ? "green" : "gray",
@@ -348,11 +342,7 @@ function drawGridCell(coord: GridCoord): void {
     interactive: false,
   }).addTo(map);
 
-  const cellStatus = token
-    ? `Contains token: ${token.value}`
-    : gameState.collectedTokens.has(key)
-    ? "Token collected"
-    : "Empty cell";
+  const cellStatus = token ? `Contains token: ${token.value}` : "Empty cell";
 
   cell.bindPopup(`
     Cell (${coord.i},${coord.j})<br>
