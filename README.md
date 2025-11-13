@@ -10,6 +10,14 @@ A location-based puzzle game combining elements of 4096, Threes, and Pokemon Go.
 4. **Inventory System** - Single-slot token inventory and collection
 5. **Crafting & Win Condition** - Token combining and victory detection
 
+## D3.b Development Phases and Notes
+
+**Notes**: Already implemented functions to track the grid's coordinates, the cell's bounds, and even trigger upon moveend and zoomend.
+
+1. **Player Movement System** - Player movement utilizing (N/S/E/W) directions along with interaction detection updates
+2. **Memoryless Cell Behavior** - Cells appear to be memoryless and transitioned to token farming
+3. **Enhanced Victory & Global Coordinates** - Pivot to initial spawn at the origin with higher victory threshold
+
 ## Project Files
 
 1. `PLAN.md` Development plan and progress tracking
