@@ -61,6 +61,7 @@
 - [x] Implement token farming (cells reset when off-screen)
 - [x] Remove `collectedTokens` tracking for D3.b
 - [x] Test farming by moving in/out of cell ranges
+Note: Performed class extraction and addressed code smells externally and transferred the file in. First time using privates and publics.
 
 ### Phase 8: Enhanced Victory & Global Coordinates
 
