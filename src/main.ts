@@ -96,31 +96,38 @@ class Player {
 
 class TokenGrid {
   private tokens = new Map<string, Token>();
+  private spawnedCells = new Set<string>();
 
   constructor(private config: GameConfig) {}
-
   getToken(coord: GridCoord): Token | null {
     const key = coord.toKey();
 
+    // First return existing tokens
     if (this.tokens.has(key)) {
       return this.tokens.get(key)!;
     }
 
-    // Spawn new token with probability
-    const spawnRoll = luck([coord.i, coord.j, "token"].toString());
-    if (spawnRoll < this.config.tokenSpawnProbability) {
-      const value =
-        Math.floor(luck([coord.i, coord.j, "value"].toString()) * 4) + 1;
-      const token = new Token(value);
-      this.tokens.set(key, token);
-      return token;
+    // Only spawn new token if we haven't tried this cell before
+    if (!this.spawnedCells.has(key)) {
+      this.spawnedCells.add(key);
+
+      const spawnRoll = luck([coord.i, coord.j, "token"].toString());
+      if (spawnRoll < this.config.tokenSpawnProbability) {
+        const value =
+          Math.floor(luck([coord.i, coord.j, "value"].toString()) * 4) + 1;
+        const token = new Token(value);
+        this.tokens.set(key, token);
+        return token;
+      }
     }
 
     return null;
   }
 
   placeToken(coord: GridCoord, token: Token): void {
-    this.tokens.set(coord.toKey(), token);
+    const key = coord.toKey();
+    this.tokens.set(key, token);
+    this.spawnedCells.add(key);
   }
 
   removeToken(coord: GridCoord): Token | null {
