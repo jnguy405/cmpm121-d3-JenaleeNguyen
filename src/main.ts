@@ -536,6 +536,7 @@ class TokenGame {
 
     const newLatLng = this.renderer["coordToLatLng"](this.player.position);
     this.playerMarker.setLatLng(newLatLng);
+    this.map.panTo(newLatLng);
 
     this.ui.updatePlayerPos();
     this.ui.showNotif(
