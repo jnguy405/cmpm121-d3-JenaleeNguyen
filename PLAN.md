@@ -72,4 +72,20 @@
 
 ## D3.c: Object persistence
 
-- To be continued...
+### Phase 9: Flyweight Cells & Memento Persistence
+
+- [ ] Implement flyweight cell system (no memory for unmodified off-screen cells)
+- [ ] Add modifiedCells Map to store only changed cell states using mementos
+- [ ] Load cells using memento -> otherwise default RNG token
+- [ ] Save cell changes (pickup, drop, combine) into mementos for persistence
+
+### Phase 10: Integrated Persistent World
+
+- [ ] Rebuild all visible cells each map movement using memento or fallback RNG
+- [ ] Ensure modified cells reappear correctly when scrolled off/on screen
+- [ ] Verify flyweight behavior -> only modified cells consume memory
+- [ ] Test long-distance travel to confirm world feels consistently persistent
+
+## D3.d: Gameplay Across Real-world Space and Time
+
+- [ ] To be continued...

@@ -18,6 +18,11 @@ A location-based puzzle game combining elements of 4096, Threes, and Pokemon Go.
 2. **Memoryless Cell Behavior** - Cells appear to be memoryless and transitioned to token farming
 3. **Enhanced Victory & Global Coordinates** - Pivot to initial spawn at the origin with higher victory threshold
 
+## D3.c Development Phases
+
+1. **Flyweight Cells & Memento Persistence** - Flyweight pattern for effective memory-saving of cells not in visibility range
+2. **Integrated Persistent World** - Memento pattern to preserve the state of off-screen cells after modification
+
 ## Project Files
 
 1. `PLAN.md` Development plan and progress tracking
