@@ -7,12 +7,9 @@ import "./style.css";
 
 // ===== DOMAIN CLASSES =====
 class GridCoord {
-  constructor(
-    public readonly i: number,
-    public readonly j: number,
-  ) {}
+  constructor(readonly i: number, readonly j: number) {}
 
-  toKey(): string {
+  toString(): string {
     return `${this.i},${this.j}`;
   }
 
@@ -22,6 +19,10 @@ class GridCoord {
 
   distanceTo(other: GridCoord): number {
     return Math.max(Math.abs(this.i - other.i), Math.abs(this.j - other.j));
+  }
+
+  isWithin(other: GridCoord, radius: number): boolean {
+    return this.distanceTo(other) <= radius;
   }
 }
 
@@ -76,7 +77,7 @@ class Player {
   }
 
   isInRange(coord: GridCoord, interactionRadius: number): boolean {
-    return this.position.distanceTo(coord) <= interactionRadius;
+    return this.position.isWithin(coord, interactionRadius);
   }
 
   pickUpToken(token: Token): void {
@@ -99,48 +100,40 @@ class TokenGrid {
   private spawnedCells = new Set<string>();
 
   constructor(private config: GameConfig) {}
-  getToken(coord: GridCoord): Token | null {
-    const key = coord.toKey();
 
-    // First return existing tokens
-    if (this.tokens.has(key)) {
-      return this.tokens.get(key)!;
+  /** Unified: get existing or spawn if needed */
+  getOrSpawn(coord: GridCoord): Token | null {
+    const key = coord.toString();
+
+    if (this.tokens.has(key)) return this.tokens.get(key)!;
+    if (this.spawnedCells.has(key)) return null;
+
+    this.spawnedCells.add(key);
+    const spawnRoll = luck(`${coord},token`);
+    if (spawnRoll < this.config.tokenSpawnProbability) {
+      const value = Math.floor(luck(`${coord},value`) * 4) + 1;
+      const token = new Token(value);
+      this.tokens.set(key, token);
+      return token;
     }
-
-    // Only spawn new token if we haven't tried this cell before
-    if (!this.spawnedCells.has(key)) {
-      this.spawnedCells.add(key);
-
-      const spawnRoll = luck([coord.i, coord.j, "token"].toString());
-      if (spawnRoll < this.config.tokenSpawnProbability) {
-        const value =
-          Math.floor(luck([coord.i, coord.j, "value"].toString()) * 4) + 1;
-        const token = new Token(value);
-        this.tokens.set(key, token);
-        return token;
-      }
-    }
-
     return null;
   }
 
   placeToken(coord: GridCoord, token: Token): void {
-    const key = coord.toKey();
+    const key = coord.toString();
     this.tokens.set(key, token);
     this.spawnedCells.add(key);
   }
 
   removeToken(coord: GridCoord): Token | null {
-    const key = coord.toKey();
+    const key = coord.toString();
     const token = this.tokens.get(key) || null;
     this.tokens.delete(key);
     return token;
   }
 
   hasWinningToken(winningValue: number): boolean {
-    return Array.from(this.tokens.values()).some((token) =>
-      token.isWinning(winningValue)
-    );
+    return [...this.tokens.values()].some((t) => t.isWinning(winningValue));
   }
 
   getAllTokens(): Map<string, Token> {
@@ -351,7 +344,7 @@ class GridRenderer {
       game.config.interactionRadius,
     );
     const bounds = this.getCellBounds(coord);
-    const token = game.grid.getToken(coord);
+    const token = game.grid.getOrSpawn(coord);
 
     const cell = L.rectangle(bounds, {
       color: interactable ? "green" : "gray",
