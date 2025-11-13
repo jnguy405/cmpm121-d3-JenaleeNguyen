@@ -50,6 +50,14 @@ const isInteractable = (coord: GridCoord): boolean =>
   Math.abs(coord.i - gameState.playerPosition.i) <= CONFIG.INTERACTION_RADIUS &&
   Math.abs(coord.j - gameState.playerPosition.j) <= CONFIG.INTERACTION_RADIUS;
 
+const coordToLatLng = (coord: GridCoord): L.LatLng =>
+  L.latLng(
+    CONFIG.CLASSROOM_LATLNG.lat + coord.i * CONFIG.CELL_SIZE +
+      CONFIG.CELL_SIZE / 2,
+    CONFIG.CLASSROOM_LATLNG.lng + coord.j * CONFIG.CELL_SIZE +
+      CONFIG.CELL_SIZE / 2,
+  );
+
 // ===== UI MANAGEMENT =====
 const invPanel = document.createElement("div");
 invPanel.id = "inventory-panel";
@@ -145,13 +153,7 @@ function movePlayer(deltaI: number, deltaJ: number): void {
   gameState.playerPosition.i += deltaI;
   gameState.playerPosition.j += deltaJ;
 
-  // Update player marker position
-  const newLatLng = L.latLng(
-    CONFIG.CLASSROOM_LATLNG.lat +
-      gameState.playerPosition.i * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2,
-    CONFIG.CLASSROOM_LATLNG.lng +
-      gameState.playerPosition.j * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2,
-  );
+  const newLatLng = coordToLatLng(gameState.playerPosition);
   playerMarker.setLatLng(newLatLng);
 
   updatePlayerPos();
@@ -234,7 +236,7 @@ function tokenCombo(
 
   gameState.placedTokens.set(key, newToken);
   map.removeLayer(tokenMarker);
-  drawToken(coord, newToken, getCellBounds(coord), isInteractable(coord));
+  drawToken(coord, newToken, isInteractable(coord));
   gameState.playerInventory = null;
 
   showNotification(`Combined tokens! Created value ${newValue}`);
@@ -355,16 +357,17 @@ function drawGridCell(coord: GridCoord): void {
     cell.on("click", () => isEmptyCell(coord));
   }
 
-  if (token) drawToken(coord, token, bounds, interactable);
+  if (token) drawToken(coord, token, interactable);
 }
 
 function drawToken(
   coord: GridCoord,
   token: Token,
-  bounds: L.LatLngBounds,
   interactable: boolean,
 ): void {
-  const marker = L.marker(bounds.getCenter(), {
+  const center = coordToLatLng(coord);
+
+  const marker = L.marker(center, {
     icon: L.divIcon({
       html: `<div class="token ${
         interactable ? "token-interactable" : "token-non-interactable"
