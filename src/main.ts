@@ -6,6 +6,8 @@ import luck from "./_luck.ts";
 import "./style.css";
 
 // ===== DOMAIN CLASSES =====
+// GridCoord: Represents a discrete grid-cell coordinate (i,j) and provides
+// comparisons, distance checks, and coordinate math used throughout the game.
 class GridCoord {
   constructor(readonly i: number, readonly j: number) {}
 
@@ -26,6 +28,8 @@ class GridCoord {
   }
 }
 
+// Token: Simple value object representing a token in a cell, supporting
+// combining, equality checks, and win-value evaluation.
 class Token {
   constructor(public readonly value: number) {}
 
@@ -43,6 +47,8 @@ class Token {
 }
 
 // ===== CORE GAME CLASSES =====
+// GameConfig: Centralized configuration for world scale, cell size, spawn
+// probability, interaction radius, and win condition used by all systems.
 class GameConfig {
   static readonly DEFAULT = new GameConfig(
     L.latLng(0, 0),
@@ -61,6 +67,8 @@ class GameConfig {
   ) {}
 }
 
+// Player: Tracks player position, inventory, movement, and interaction range.
+// Manages picking up and placing tokens.
 class Player {
   public position: GridCoord;
   public inventory: Token | null = null;
@@ -95,40 +103,69 @@ class Player {
   }
 }
 
+// TokenGrid: Flyweight + Memento–based world storage. Only modified cells are
+// stored; unmodified cells are generated deterministically on demand.
 class TokenGrid {
   private tokens = new Map<string, Token>();
-  private spawnedCells = new Set<string>();
+  private modifiedCells = new Map<string, { tokenValue: number | null }>();
 
   constructor(private config: GameConfig) {}
 
-  /** Unified: get existing or spawn if needed */
+  private getKey(coord: GridCoord): string {
+    return coord.toString();
+  }
+
+  private loadMemento(coord: GridCoord): Token | null | undefined {
+    const key = this.getKey(coord);
+    const m = this.modifiedCells.get(key);
+    if (!m) return undefined;
+    if (m.tokenValue === null) return null;
+    return new Token(m.tokenValue);
+  }
+
+  private saveMemento(coord: GridCoord, token: Token | null): void {
+    const key = this.getKey(coord);
+    this.modifiedCells.set(key, {
+      tokenValue: token ? token.value : null,
+    });
+  }
+
   getOrSpawn(coord: GridCoord): Token | null {
-    const key = coord.toString();
+    const key = this.getKey(coord);
 
-    if (this.tokens.has(key)) return this.tokens.get(key)!;
-    if (this.spawnedCells.has(key)) return null;
+    const mementoValue = this.loadMemento(coord);
+    if (mementoValue !== undefined) {
+      return mementoValue;
+    }
 
-    this.spawnedCells.add(key);
+    if (this.tokens.has(key)) {
+      return this.tokens.get(key)!;
+    }
+
     const spawnRoll = luck(`${coord},token`);
     if (spawnRoll < this.config.tokenSpawnProbability) {
       const value = Math.floor(luck(`${coord},value`) * 4) + 1;
       const token = new Token(value);
-      this.tokens.set(key, token);
+
+      this.saveMemento(coord, token);
       return token;
     }
+
+    this.saveMemento(coord, null);
     return null;
   }
 
   placeToken(coord: GridCoord, token: Token): void {
-    const key = coord.toString();
+    const key = this.getKey(coord);
     this.tokens.set(key, token);
-    this.spawnedCells.add(key);
+    this.saveMemento(coord, token);
   }
 
   removeToken(coord: GridCoord): Token | null {
-    const key = coord.toString();
+    const key = this.getKey(coord);
     const token = this.tokens.get(key) || null;
     this.tokens.delete(key);
+    this.saveMemento(coord, null);
     return token;
   }
 
@@ -142,6 +179,8 @@ class TokenGrid {
 }
 
 // ===== UI MANAGEMENT CLASS =====
+// UIManager: Handles DOM UI panels, notifications, inventory display, movement
+// controls, and win messages. Syncs UI with game state.
 class UIManager {
   private invPanel: HTMLDivElement;
   private controlPanel: HTMLDivElement;
@@ -277,6 +316,8 @@ class UIManager {
 }
 
 // ===== GRID RENDERER CLASS =====
+// GridRenderer: Rebuilds all visible grid cells and token markers each frame.
+// Converts coordinates to map space and draws tokens, cells, and popups.
 class GridRenderer {
   private gridLayers: L.Layer[] = [];
   private tokenMarkers: L.Marker[] = [];
@@ -442,6 +483,8 @@ class GridRenderer {
 }
 
 // ===== MAIN GAME CLASS =====
+// TokenGame: Coordinates all subsystems (player, grid, renderer, UI, map).
+// Handles input events, token interactions, win detection, and overall flow.
 class TokenGame {
   public readonly config: GameConfig;
   public readonly player: Player;
