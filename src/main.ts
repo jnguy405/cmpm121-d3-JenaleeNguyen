@@ -44,15 +44,15 @@ class Token {
 // ===== CORE GAME CLASSES =====
 class GameConfig {
   static readonly DEFAULT = new GameConfig(
-    L.latLng(36.997936938057016, -122.05703507501151),
+    L.latLng(0, 0),
     1e-4,
     3,
     0.15,
-    8,
+    64,
   );
 
   constructor(
-    public readonly classroomLatLng: L.LatLng,
+    public readonly globalLatLng: L.LatLng,
     public readonly cellSize: number,
     public readonly interactionRadius: number,
     public readonly tokenSpawnProbability: number,
@@ -293,9 +293,9 @@ class GridRenderer {
   private coordToLatLng(coord: GridCoord): L.LatLng {
     const { config } = this.game;
     return L.latLng(
-      config.classroomLatLng.lat + coord.i * config.cellSize +
+      config.globalLatLng.lat + coord.i * config.cellSize +
         config.cellSize / 2,
-      config.classroomLatLng.lng + coord.j * config.cellSize +
+      config.globalLatLng.lng + coord.j * config.cellSize +
         config.cellSize / 2,
     );
   }
@@ -304,12 +304,12 @@ class GridRenderer {
     const { config } = this.game;
     return L.latLngBounds([
       [
-        config.classroomLatLng.lat + coord.i * config.cellSize,
-        config.classroomLatLng.lng + coord.j * config.cellSize,
+        config.globalLatLng.lat + coord.i * config.cellSize,
+        config.globalLatLng.lng + coord.j * config.cellSize,
       ],
       [
-        config.classroomLatLng.lat + (coord.i + 1) * config.cellSize,
-        config.classroomLatLng.lng + (coord.j + 1) * config.cellSize,
+        config.globalLatLng.lat + (coord.i + 1) * config.cellSize,
+        config.globalLatLng.lng + (coord.j + 1) * config.cellSize,
       ],
     ]);
   }
@@ -319,19 +319,19 @@ class GridRenderer {
     const bounds = map.getBounds();
 
     const iMin = Math.floor(
-      (bounds.getSouthWest().lat - config.classroomLatLng.lat) /
+      (bounds.getSouthWest().lat - config.globalLatLng.lat) /
         config.cellSize,
     );
     const iMax = Math.floor(
-      (bounds.getNorthEast().lat - config.classroomLatLng.lat) /
+      (bounds.getNorthEast().lat - config.globalLatLng.lat) /
         config.cellSize,
     );
     const jMin = Math.floor(
-      (bounds.getSouthWest().lng - config.classroomLatLng.lng) /
+      (bounds.getSouthWest().lng - config.globalLatLng.lng) /
         config.cellSize,
     );
     const jMax = Math.floor(
-      (bounds.getNorthEast().lng - config.classroomLatLng.lng) /
+      (bounds.getNorthEast().lng - config.globalLatLng.lng) /
         config.cellSize,
     );
 
@@ -475,7 +475,7 @@ class TokenGame {
   }
 
   private initializeMap(mapElementId: string): L.Map {
-    const map = L.map(mapElementId).setView(this.config.classroomLatLng, 19);
+    const map = L.map(mapElementId).setView(this.config.globalLatLng, 19);
 
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
@@ -487,7 +487,7 @@ class TokenGame {
   }
 
   private createPlayerMarker(): L.Marker {
-    const marker = L.marker(this.config.classroomLatLng, {
+    const marker = L.marker(this.config.globalLatLng, {
       icon: L.divIcon({
         html: `<div class="player-marker">YOU</div>`,
         className: "player-marker-container",

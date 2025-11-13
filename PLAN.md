@@ -65,10 +65,10 @@
 
 ### Phase 8: Enhanced Victory & Global Coordinates
 
-- [ ] Switch to Null Island coordinate system (0,0)
-- [ ] Increase win condition threshold (e.g., 32 or 64)
-- [ ] Update coordinate calculations for global system
-- [ ] Test extended crafting with player movement
+- [x] Switch to Null Island coordinate system (0,0)
+- [x] Increase win condition threshold (e.g., 32 or 64)
+- [x] Update coordinate calculations for global system
+- [x] Test extended crafting with player movement
 
 ## D3.c: Object persistence
 
