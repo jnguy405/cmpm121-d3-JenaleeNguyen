@@ -25,9 +25,12 @@ A location-based puzzle game combining elements of 4096, Threes, and Pokemon Go.
 
 ## Project Files
 
-1. `PLAN.md` Development plan and progress tracking
-2. `README.md` Project overview (this file)
-3. `main.ts` Main game logic and Leaflet implementation
-4. `style.css` Styling for map and UI elements
-5. `_leafletWorkaround.ts` Leaflet icon fixes
-6. `_luck.ts` Deterministic random number generator
+- `PLAN.md`: Development plan and progress tracking.
+- `README.md`: Project overview (this file).
+- `src/main.ts`: Entry point — loads global styles/workarounds and starts the game by creating a `TokenGame` instance.
+- `src/Token/token.ts`: Token-domain module — exports `Token`, `TokenGrid`, and `TokenGame`. Contains token behavior, world storage (memento/flyweight), and main game coordination (map, input handling, win detection).
+- `src/Grid/grid.ts`: Grid-related module — exports `GridCoord` and `GridRenderer`. Handles discrete grid coordinates, viewport-to-grid math, and rendering cells/tokens onto the Leaflet map.
+- `src/core.ts`: Core/shared classes — exports `GameConfig`, `Player`, and `UIManager`. Keeps shared configuration, player state & inventory logic, and DOM UI management.
+- `src/style.css`: Styling for map and UI elements.
+- `src/_leafletWorkaround.ts`: Leaflet icon fixes/workarounds required by the build.
+- `src/_luck.ts`: Deterministic random number generator used for reproducible token spawning.
