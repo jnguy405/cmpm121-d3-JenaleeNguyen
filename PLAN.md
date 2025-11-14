@@ -1,6 +1,37 @@
 # D3: World of Bits
 
-## D3.a Phases
+**World of Bits** is a geographic crafting game where players explore a grid-based world, collect numeric tokens, and combine them through strategic placement to achieve winning combinations. The game blends real-world coordinates with game mechanics, creating a persistent world that spans the globe.
+
+## Game Design Vision
+
+World of Bits is composed of layered systems that create emergent gameplay:
+
+- **Geographic Foundation**: Leaflet map with real-world coordinate system
+- **Grid-Based Interaction**: Discrete cell system overlaid on continuous geography
+- **Token Economy**: Collectible and combinable numeric tokens with progression
+- **Persistent World**: Flyweight pattern with memento-based state persistence
+- **Global Scale**: Gameplay that literally spans the entire world
+
+## Technologies
+
+- **TypeScript, HTML, CSS** - Core web technologies
+- **Git Codespace + VS Code** - Development environment
+- **Copilot Autocomplete** - AI-assisted development
+- **Leaflet + Geolocation** - Map rendering and coordinate system
+- **Deno + Vite** - Build tooling and development server
+- **Git Actions** - CI/CD pipeline
+
+## Core Architecture
+
+- **TokenGrid**: Flyweight + Memento pattern for world persistence
+- **GridRenderer**: Dynamic cell rendering with Leaflet integration
+- **Player**: Mobile agent with inventory and interaction range
+- **UIManager**: Reactive UI updates and player feedback
+- **GameConfig**: Centralized game balance and world parameters
+
+## Assignments
+
+## D3.a Phases - Core Mechanics (token and grid foundation)
 
 ### Phase 1: Map & Grid Foundation
 
@@ -37,7 +68,7 @@
 - [x] Win condition detection and message
 - [x] Complete gameplay flow: collect -> combine -> win
 
-## D3.b: Globe-spanning gameplay
+## D3.b: Globe-spanning gameplay (player movement and farming)
 
 ### Already Implemented
 
@@ -70,13 +101,13 @@
 - [x] Update coordinate calculations for global system
 - [x] Test extended crafting with player movement
 
-## D3.c: Object persistence
+## D3.c: Object persistence (Flyweight and Momento patterns)
 
 ### Phase 9: Flyweight Cells & Memento Persistence
 
-- [x] Implement flyweight cell system (no memory for unmodified off-screen cells)
+- [x] Implement Flyweight cell system (no memory for unmodified off-screen cells)
 - [x] Add modifiedCells Map to store only changed cell states using mementos
-- [x] Load cells using memento -> otherwise default RNG token
+- [x] Load cells using Memento -> otherwise default RNG token
 - [x] Save cell changes (pickup, drop, combine) into mementos for persistence
 
 ### Phase 10: Integrated Persistent World
