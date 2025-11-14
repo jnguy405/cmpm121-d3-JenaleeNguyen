@@ -36,7 +36,7 @@ export class TokenGrid {
     const m = this.modifiedCells.get(key);
     if (!m) return undefined;
     if (m.tokenValue === null) return null;
-    return new Token(m.tokenValue);
+    return this.getOrCreateToken(m.tokenValue);
   }
 
   private saveMemento(coord: GridCoord, token: Token | null): void {
@@ -44,6 +44,14 @@ export class TokenGrid {
     this.modifiedCells.set(key, {
       tokenValue: token ? token.value : null,
     });
+  }
+
+  getOrCreateToken(value: number): Token {
+    const key = `val-${value}`;
+    if (!this.tokens.has(key)) {
+      this.tokens.set(key, new Token(value));
+    }
+    return this.tokens.get(key)!;
   }
 
   getOrSpawn(coord: GridCoord): Token | null {
@@ -61,7 +69,7 @@ export class TokenGrid {
     const spawnRoll = luck(`${coord},token`);
     if (spawnRoll < this.config.tokenSpawnProbability) {
       const value = Math.floor(luck(`${coord},value`) * 4) + 1;
-      const token = new Token(value);
+      const token = this.getOrCreateToken(value);
 
       this.saveMemento(coord, token);
       return token;
