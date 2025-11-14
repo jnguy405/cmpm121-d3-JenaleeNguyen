@@ -124,7 +124,7 @@ export class UIManager {
       ? `Holding token: ${player.inventory.value}. ${
         player.inventory.value >= config.winningVal
           ? "🎉 YOU WIN!"
-          : "Click on a token of the same value to combine."
+          : "Click on a token of the same value to combine or an empty cell to place."
       }`
       : "Inventory empty. Click on tokens to collect.";
 
