@@ -86,25 +86,28 @@ export class GridRenderer {
     const bounds = this.getCellBounds(coord);
     const token = game.grid.getOrSpawn(coord);
 
+    const isPlaceable = !token && interactable;
+
     const cell = L.rectangle(bounds, {
       color: interactable ? "green" : "gray",
       weight: interactable ? 2 : 1,
       fillColor: interactable ? "lightgreen" : "lightgray",
       fillOpacity: 0.3,
-      interactive: false,
+      interactive: isPlaceable,
     }).addTo(game.map);
 
     const cellStatus = token ? `Contains token: ${token.value}` : "Empty cell";
 
     cell.bindPopup(`
-      Cell (${coord.i},${coord.j})<br>
-      ${interactable ? "🟢 Interactable Area" : "⚫ Not Interactable"}<br>
-      ${cellStatus}
-    `);
+    Cell (${coord.i},${coord.j})<br>
+    ${interactable ? "🟢 Interactable Area" : "⚫ Not Interactable"}<br>
+    ${cellStatus}
+  `);
 
-    if (!token && interactable) {
-      cell.setStyle({ interactive: true });
-      cell.on("click", () => game.handleEmptyCellClick(coord));
+    if (isPlaceable) {
+      cell.on("click", () => {
+        game.handleEmptyCellClick(coord);
+      });
     }
 
     if (token) {
@@ -177,6 +180,5 @@ export class GridRenderer {
     this.clearGrid();
     const visibleCoords = this.getGridCoords();
     visibleCoords.forEach((coord) => this.drawGridCell(coord));
-    console.log(`Drew ${visibleCoords.length} grid cells`);
   }
 }
