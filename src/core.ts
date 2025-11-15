@@ -53,10 +53,14 @@ export class Player {
 
 // UIManager: Handles DOM UI panels, notifications, inventory display, movement
 // controls, and win messages. Syncs UI with game state.
+// ...
+// Can this class also route button clicks to player movement (who receives?)
+// Move this class to a separate UI file?
 export class UIManager {
   private invPanel: HTMLDivElement;
   private controlPanel: HTMLDivElement;
 
+  // FACADE NOTE: Heavily tied to TokenGame
   constructor(private game: TokenGame) {
     this.invPanel = this.createInvPanel();
     this.controlPanel = this.createCrtlPanel();
@@ -88,6 +92,7 @@ export class UIManager {
     return panel;
   }
 
+  // Private this
   showNotif(message: string, duration = 3000): void {
     const existing = document.getElementById("game-notif");
     existing?.remove();
@@ -118,6 +123,7 @@ export class UIManager {
     setTimeout(() => notif.remove(), duration);
   }
 
+  // Instead of grabbing game.player pass in parameters to the class?
   updateInvUI(): void {
     const { player, config } = this.game;
     const status = player.inventory
@@ -152,6 +158,7 @@ export class UIManager {
     }
   }
 
+  // Private this
   showWinMsg(): void {
     const winMsg = document.createElement("div");
     winMsg.id = "win-message";
