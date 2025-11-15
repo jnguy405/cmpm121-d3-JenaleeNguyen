@@ -1,5 +1,6 @@
 import L from "leaflet";
 import { GridCoord } from "./Grid/grid.ts";
+import type { BtnMoveCtrl } from "./Movement/moveCtrl.ts";
 import type { Token, TokenGame } from "./Token/token.ts";
 
 // GameConfig: Centralized configuration for world scale, cell size, spawn
@@ -53,19 +54,22 @@ export class Player {
 
 // UIManager: Handles DOM UI panels, notifications, inventory display, movement
 // controls, and win messages. Syncs UI with game state.
-// ...
-// Can this class also route button clicks to player movement (who receives?)
-// Move this class to a separate UI file?
 export class UIManager {
   private invPanel: HTMLDivElement;
   private controlPanel: HTMLDivElement;
+  private moveModeSelect: HTMLSelectElement;
 
-  // FACADE NOTE: Heavily tied to TokenGame
   constructor(private game: TokenGame) {
     this.invPanel = this.createInvPanel();
     this.controlPanel = this.createCrtlPanel();
     document.body.appendChild(this.invPanel);
     document.body.appendChild(this.controlPanel);
+
+    const moveModeElement = document.getElementById("move-mode");
+    if (!moveModeElement) throw new Error("move-mode element not found");
+    this.moveModeSelect = moveModeElement as HTMLSelectElement;
+
+    this.setupMoveEventListeners();
   }
 
   private createInvPanel(): HTMLDivElement {
@@ -78,21 +82,99 @@ export class UIManager {
     const panel = document.createElement("div");
     panel.id = "control-panel";
     panel.innerHTML = `
-      <h3>Movement Controls</h3>
-      <div class="movement-buttons">
-        <button id="move-north">↑ North</button>
-        <div>
-          <button id="move-west">← West</button>
-          <button id="move-east">East →</button>
-        </div>
-        <button id="move-south">↓ South</button>
-      </div>
-      <div id="player-pos">Position: (0, 0)</div>
-    `;
+            <h3>Movement Controls</h3>
+            <div class="movement-mode-selector">
+                <label for="move-mode">Movement Mode:</label>
+                <select id="move-mode">
+                    <option value="buttons">Button Controls</option>
+                    <option value="geolocation">Geolocation</option>
+                </select>
+            </div>
+            <div class="movement-buttons">
+                <button id="move-north">↑ North</button>
+                <div>
+                    <button id="move-west">← West</button>
+                    <button id="move-east">East →</button>
+                </div>
+                <button id="move-south">↓ South</button>
+            </div>
+            <div id="player-pos">Position: (0, 0)</div>
+            <div id="move-status">Mode: Button Controls</div>
+        `;
     return panel;
   }
 
-  // Private this
+  private setupMoveEventListeners(): void {
+    this.moveModeSelect.addEventListener("change", (e) => {
+      const mode = (e.target as HTMLSelectElement).value;
+      this.switchMoveMode(mode);
+    });
+
+    // Movement buttons
+    document.getElementById("move-north")?.addEventListener(
+      "click",
+      () => this.handleBtnMove(-1, 0),
+    );
+    document.getElementById("move-south")?.addEventListener(
+      "click",
+      () => this.handleBtnMove(1, 0),
+    );
+    document.getElementById("move-east")?.addEventListener(
+      "click",
+      () => this.handleBtnMove(0, 1),
+    );
+    document.getElementById("move-west")?.addEventListener(
+      "click",
+      () => this.handleBtnMove(0, -1),
+    );
+  }
+
+  private handleBtnMove(deltaI: number, deltaJ: number): void {
+    const currCtrl = this.game.moveMgr.getCurrCtrl();
+    if (currCtrl?.getModeName() === "buttons") {
+      const btnCtrl = currCtrl as BtnMoveCtrl;
+      btnCtrl.btnMove(deltaI, deltaJ);
+    } else {
+      this.showNotif("Switch to button mode to use movement buttons");
+    }
+  }
+
+  private switchMoveMode(mode: string): void {
+    const success = this.game.moveMgr.switchCtrl(mode);
+    if (success) {
+      this.showNotif(`Switched to ${mode} movement`);
+      this.updateMoveStatus();
+
+      // Update dropdown to match actual control name
+      const currCtrl = this.game.moveMgr.getCurrCtrl();
+      if (currCtrl && this.moveModeSelect) {
+        this.moveModeSelect.value = currCtrl.getModeName();
+      }
+
+      if (mode === "geolocation") {
+        this.showNotif("Geolocation active - move in real world to play!");
+      }
+    } else {
+      this.showNotif(`Failed to switch to ${mode} mode`);
+      // Reset dropdown to current mode
+      const currCtrl = this.game.moveMgr.getCurrCtrl();
+      if (currCtrl && this.moveModeSelect) {
+        this.moveModeSelect.value = currCtrl.getModeName();
+      }
+    }
+  }
+
+  private updateMoveStatus(): void {
+    const statusElement = document.getElementById("move-status");
+    if (statusElement) {
+      const currCtrl = this.game.moveMgr.getCurrCtrl();
+      const modeName = currCtrl ? currCtrl.getModeName() : "unknown";
+      statusElement.textContent = `Mode: ${
+        modeName.charAt(0).toUpperCase() + modeName.slice(1)
+      }`;
+    }
+  }
+
   showNotif(message: string, duration = 3000): void {
     const existing = document.getElementById("game-notif");
     existing?.remove();
@@ -100,30 +182,29 @@ export class UIManager {
     const notif = document.createElement("div");
     notif.id = "game-notif";
     notif.innerHTML = `
-      <div style="
-        position: fixed;
-        top: 20%;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 15px 25px;
-        border-radius: 8px;
-        text-align: center;
-        z-index: 10000;
-        font-family: Arial, sans-serif;
-        font-size: 16px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      ">
-        ${message}
-      </div>
-    `;
+            <div style="
+                position: fixed;
+                top: 20%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0,0,0,0.8);
+                color: white;
+                padding: 15px 25px;
+                border-radius: 8px;
+                text-align: center;
+                z-index: 10000;
+                font-family: Arial, sans-serif;
+                font-size: 16px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            ">
+                ${message}
+            </div>
+        `;
     document.body.appendChild(notif);
 
     setTimeout(() => notif.remove(), duration);
   }
 
-  // Instead of grabbing game.player pass in parameters to the class?
   updateInvUI(): void {
     const { player, config } = this.game;
     const status = player.inventory
@@ -135,18 +216,18 @@ export class UIManager {
       : "Inventory empty. Click on tokens to collect.";
 
     this.invPanel.innerHTML = `
-      <h3>Player Inventory</h3>
-      <div id="inventory-slot" class="${
+            <h3>Player Inventory</h3>
+            <div id="inventory-slot" class="${
       player.inventory ? "occupied" : "empty"
     }">
-        ${
+                ${
       player.inventory
         ? `<div class="inventory-token">${player.inventory.value}</div>`
         : "Empty"
     }
-      </div>
-      <div id="interaction-status">${status}</div>
-    `;
+            </div>
+            <div id="interaction-status">${status}</div>
+        `;
   }
 
   updatePlayerPos(): void {
@@ -158,38 +239,38 @@ export class UIManager {
     }
   }
 
-  // Private this
   showWinMsg(): void {
     const winMsg = document.createElement("div");
     winMsg.id = "win-message";
     winMsg.innerHTML = `
-      <div style="
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0,0,0,0.9);
-        color: white;
-        padding: 30px;
-        border-radius: 15px;
-        text-align: center;
-        z-index: 10000;
-        font-family: Arial, sans-serif;
-      ">
-        <h1 style="color: #4CAF50; margin: 0 0 20px 0;">🎉 YOU WIN! 🎉</h1>
-        <p style="font-size: 18px; margin: 0 0 15px 0;">
-          You successfully crafted a token of value ${this.game.config.winningVal} or higher!
-        </p>
-        <p style="font-size: 14px; color: #ccc;">
-          Refresh the page to play again.
-        </p>
-      </div>
-    `;
+            <div style="
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0,0,0,0.9);
+                color: white;
+                padding: 30px;
+                border-radius: 15px;
+                text-align: center;
+                z-index: 10000;
+                font-family: Arial, sans-serif;
+            ">
+                <h1 style="color: #4CAF50; margin: 0 0 20px 0;">🎉 YOU WIN! 🎉</h1>
+                <p style="font-size: 18px; margin: 0 0 15px 0;">
+                    You successfully crafted a token of value ${this.game.config.winningVal} or higher!
+                </p>
+                <p style="font-size: 14px; color: #ccc;">
+                    Refresh the page to play again.
+                </p>
+            </div>
+        `;
     document.body.appendChild(winMsg);
   }
 
   updateAll(): void {
     this.updateInvUI();
     this.updatePlayerPos();
+    this.updateMoveStatus();
   }
 }

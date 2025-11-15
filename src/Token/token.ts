@@ -2,6 +2,8 @@ import L from "leaflet";
 import luck from "../_luck.ts";
 import { GameConfig, Player, UIManager } from "../core.ts";
 import { GridCoord, GridRenderer } from "../Grid/grid.ts";
+import { BtnMoveCtrl, GeoMoveCtrl } from "../Movement/moveCtrl.ts";
+import { MoveManager } from "../Movement/moveManager.ts";
 
 // Token: Simple value object representing a token in a cell.
 export class Token {
@@ -112,6 +114,7 @@ export class TokenGame {
 
   public readonly ui: UIManager;
   public readonly renderer: GridRenderer;
+  public readonly moveMgr: MoveManager;
   private playerMarker: L.Marker;
 
   constructor(mapElementId: string, config: GameConfig = GameConfig.DEFAULT) {
@@ -119,6 +122,10 @@ export class TokenGame {
     this.player = new Player(new GridCoord(0, 0));
     this.grid = new TokenGrid(config);
     this.map = this.initializeMap(mapElementId);
+
+    this.moveMgr = new MoveManager(this);
+    this.initMoveCtrls();
+
     this.ui = new UIManager(this);
     this.renderer = new GridRenderer(this);
 
@@ -126,6 +133,8 @@ export class TokenGame {
     this.setupEventListeners();
     this.ui.updateAll();
     this.renderer.renderGrid();
+
+    this.moveMgr.start();
   }
 
   private initializeMap(mapElementId: string): L.Map {
@@ -138,6 +147,58 @@ export class TokenGame {
     }).addTo(map);
 
     return map;
+  }
+
+  private initMoveCtrls(): void {
+    const btnCtrl = new BtnMoveCtrl(this);
+    const geoCtrl = new GeoMoveCtrl(this);
+
+    console.log("Registering button control...");
+    this.moveMgr.regCtrl("buttons", btnCtrl);
+    console.log("Registering geolocation control...");
+    this.moveMgr.regCtrl("geolocation", geoCtrl);
+
+    console.log(
+      "Available modes after registration:",
+      this.moveMgr.getAvailableModes(),
+    );
+
+    this.moveMgr.setPosHandler((position) => {
+      this.handlePosUpdate(position);
+    });
+
+    this.moveMgr.switchCtrl("buttons");
+  }
+
+  private handlePosUpdate(position: { lat: number; lng: number }): void {
+    if (this.gameWon) {
+      this.ui.showNotif("Game completed! Movement disabled.");
+      return;
+    }
+
+    const newGridCoord = this.latLngToGridCoord(position);
+    this.player.position = newGridCoord;
+
+    const newLatLng = this.renderer["coordToLatLng"](this.player.position);
+    this.playerMarker.setLatLng(newLatLng);
+    this.map.panTo(newLatLng);
+
+    this.ui.updatePlayerPos();
+    this.ui.showNotif(
+      `Moved to (${this.player.position.i}, ${this.player.position.j})`,
+    );
+    this.renderer.renderGrid();
+  }
+
+  private latLngToGridCoord(position: { lat: number; lng: number }): GridCoord {
+    const { config } = this;
+    const i = Math.floor(
+      (position.lat - config.globalLatLng.lat) / config.cellSize,
+    );
+    const j = Math.floor(
+      (position.lng - config.globalLatLng.lng) / config.cellSize,
+    );
+    return new GridCoord(i, j);
   }
 
   private createPlayerMarker(): L.Marker {
@@ -157,48 +218,10 @@ export class TokenGame {
   }
 
   private setupEventListeners(): void {
-    // Movement controls
-    document.getElementById("move-north")?.addEventListener(
-      "click",
-      () => this.movePlayer(-1, 0),
-    );
-    document.getElementById("move-south")?.addEventListener(
-      "click",
-      () => this.movePlayer(1, 0),
-    );
-    document.getElementById("move-east")?.addEventListener(
-      "click",
-      () => this.movePlayer(0, 1),
-    );
-    document.getElementById("move-west")?.addEventListener(
-      "click",
-      () => this.movePlayer(0, -1),
-    );
-
-    // Map events
     this.map.on("moveend", () => this.renderer.renderGrid()).on(
       "zoomend",
       () => this.renderer.renderGrid(),
     );
-  }
-
-  movePlayer(deltaI: number, deltaJ: number): void {
-    if (this.gameWon) {
-      this.ui.showNotif("Game completed! Movement disabled.");
-      return;
-    }
-
-    this.player.move(deltaI, deltaJ);
-
-    const newLatLng = this.renderer["coordToLatLng"](this.player.position);
-    this.playerMarker.setLatLng(newLatLng);
-    this.map.panTo(newLatLng);
-
-    this.ui.updatePlayerPos();
-    this.ui.showNotif(
-      `Moved to (${this.player.position.i}, ${this.player.position.j})`,
-    );
-    this.renderer.renderGrid();
   }
 
   handleTokenClick(
