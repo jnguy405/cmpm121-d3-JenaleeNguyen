@@ -202,7 +202,9 @@ export class TokenGame {
   }
 
   private createPlayerMarker(): L.Marker {
-    const marker = L.marker(this.config.globalLatLng, {
+    const initialLatLng = this.renderer["coordToLatLng"](this.player.position);
+
+    const marker = L.marker(initialLatLng, {
       icon: L.divIcon({
         html: `<div class="player-marker">YOU</div>`,
         className: "player-marker-container",
