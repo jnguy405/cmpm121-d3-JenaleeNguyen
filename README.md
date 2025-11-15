@@ -23,6 +23,11 @@ A location-based puzzle game combining elements of 4096, Threes, and Pokemon Go.
 1. **Flyweight Cells & Memento Persistence** - Flyweight pattern for effective memory-saving of cells not in visibility range
 2. **Integrated Persistent World** - Memento pattern to preserve the state of off-screen cells after modification
 
+## D3.d Development Phases 11-12
+
+1. **Geolocation API and Movement System Enhancement** - Pivot to the broswer geolocation API and employ the Facade pattern on the player movement system
+2. **Game State Persistence** - Implement game state and memory control
+
 ## Project Files
 
 - `PLAN.md`: Development plan and progress tracking.

@@ -119,4 +119,15 @@ World of Bits is composed of layered systems that create emergent gameplay:
 
 ## D3.d: Gameplay Across Real-world Space and Time
 
-- [ ] To be continued...
+### Phase 11: Geolocation API and Movement System Enhancement
+
+- [ ] Implement alternative movement controls using real-world location
+- [ ] Create abstraction layer for different movement input methods
+- [ ] Add ability to switch between movement control schemes
+- [ ] Update player positioning system to work with new movement controls
+
+### Phase 12: Game State Persistence
+
+- [ ] Add persistent storage for game progress across sessions
+- [ ] Implement save/load functionality for world state
+- [ ] Create new game initialization system
