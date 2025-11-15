@@ -153,15 +153,8 @@ export class TokenGame {
     const btnCtrl = new BtnMoveCtrl(this);
     const geoCtrl = new GeoMoveCtrl(this);
 
-    console.log("Registering button control...");
     this.moveMgr.regCtrl("buttons", btnCtrl);
-    console.log("Registering geolocation control...");
     this.moveMgr.regCtrl("geolocation", geoCtrl);
-
-    console.log(
-      "Available modes after registration:",
-      this.moveMgr.getAvailableModes(),
-    );
 
     this.moveMgr.setPosHandler((position) => {
       this.handlePosUpdate(position);
