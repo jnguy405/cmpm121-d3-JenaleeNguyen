@@ -160,7 +160,7 @@ export class TokenGame {
       this.handlePosUpdate(position);
     });
 
-    this.moveMgr.switchCtrl("buttons");
+    this.moveMgr.switchCtrl("geolocation");
   }
 
   private handlePosUpdate(position: { lat: number; lng: number }): void {

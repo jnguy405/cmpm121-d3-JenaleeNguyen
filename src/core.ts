@@ -86,8 +86,8 @@ export class UIManager {
             <div class="movement-mode-selector">
                 <label for="move-mode">Movement Mode:</label>
                 <select id="move-mode">
-                    <option value="buttons">Button Controls</option>
                     <option value="geolocation">Geolocation</option>
+                    <option value="buttons">Button Controls</option>
                 </select>
             </div>
             <div class="movement-buttons">
