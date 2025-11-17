@@ -24,7 +24,12 @@ export class Token {
 
 // TokenGrid: Flyweight + Memento–based world storage.
 export class TokenGrid {
+  // FLYWEIGHT PATTERN: This Map stores shared Token instances by value
+  // Multiple grid cells can reference the same Token object if they have the same value
   private tokens = new Map<string, Token>();
+
+  // MEMENTO PATTERN: This Map stores the state (token values) for each cell coordinate
+  // It remembers which tokens are placed where, acting as a memento of the grid state
   private modifiedCells = new Map<string, { tokenValue: number | null }>();
 
   constructor(private config: GameConfig) {}
@@ -33,50 +38,65 @@ export class TokenGrid {
     return coord.toString();
   }
 
+  // MEMENTO PATTERN: Restores previous state for a coordinate
+  // Returns the token that was previously at this position, or undefined if no memento exists
   private loadMemento(coord: GridCoord): Token | null | undefined {
     const key = this.getKey(coord);
     const m = this.modifiedCells.get(key);
-    if (!m) return undefined;
-    if (m.tokenValue === null) return null;
-    return this.getOrCreateToken(m.tokenValue);
+    if (!m) return undefined; // No memento exists for this coordinate
+    if (m.tokenValue === null) return null; // Memento records empty cell
+    return this.getOrCreateToken(m.tokenValue); // Memento records token value
   }
 
+  // MEMENTO PATTERN: Saves current state for a coordinate
+  // Creates a memento storing whether this cell has a token and its value
   private saveMemento(coord: GridCoord, token: Token | null): void {
     const key = this.getKey(coord);
     this.modifiedCells.set(key, {
-      tokenValue: token ? token.value : null,
+      tokenValue: token ? token.value : null, // Store token value or null for empty
     });
   }
 
+  // FLYWEIGHT PATTERN: Returns existing Token instance or creates new one
+  // This ensures that all tokens with the same value share the same object instance
   getOrCreateToken(value: number): Token {
-    const key = `val-${value}`;
+    const key = `val-${value}`; // Key based on token value, not position
     if (!this.tokens.has(key)) {
+      // Create new Token instance only if it doesn't exist
       this.tokens.set(key, new Token(value));
     }
+    // Return the shared Token instance
     return this.tokens.get(key)!;
   }
 
   getOrSpawn(coord: GridCoord): Token | null {
     const key = this.getKey(coord);
 
+    // MEMENTO PATTERN: First check if we have a saved state for this coordinate
     const mementoValue = this.loadMemento(coord);
     if (mementoValue !== undefined) {
-      return mementoValue;
+      return mementoValue; // Return the remembered state
     }
 
+    // Check if token already exists at this position
     if (this.tokens.has(key)) {
       return this.tokens.get(key)!;
     }
 
+    // Spawn new token based on probability
     const spawnRoll = luck(`${coord},token`);
     if (spawnRoll < this.config.tokenSpawnProbability) {
       const value = Math.floor(luck(`${coord},value`) * 4) + 1;
+
+      // FLYWEIGHT PATTERN: Use shared token instance instead of creating new one
       const token = this.getOrCreateToken(value);
 
+      // MEMENTO PATTERN: Save this newly spawned token to remember it
       this.saveMemento(coord, token);
       return token;
     }
 
+    // MEMENTO PATTERN: Remember that this cell is empty
     this.saveMemento(coord, null);
     return null;
   }
@@ -84,6 +104,8 @@ export class TokenGrid {
   placeToken(coord: GridCoord, token: Token): void {
     const key = this.getKey(coord);
     this.tokens.set(key, token);
+
+    // MEMENTO PATTERN: Save the new token placement to remember it
     this.saveMemento(coord, token);
   }
 
@@ -91,6 +113,8 @@ export class TokenGrid {
     const key = this.getKey(coord);
     const token = this.tokens.get(key) || null;
     this.tokens.delete(key);
+
+    // MEMENTO PATTERN: Remember that this cell is now empty
     this.saveMemento(coord, null);
     return token;
   }
@@ -108,7 +132,7 @@ export class TokenGrid {
 export class TokenGame {
   public readonly config: GameConfig;
   public readonly player: Player;
-  public readonly grid: TokenGrid;
+  public readonly grid: TokenGrid; // Contains both Flyweight and Memento patterns
   public readonly map: L.Map;
   public gameWon: boolean = false;
 
@@ -120,6 +144,8 @@ export class TokenGame {
   constructor(mapElementId: string, config: GameConfig = GameConfig.DEFAULT) {
     this.config = config;
     this.player = new Player(new GridCoord(0, 0));
+
+    // FLYWEIGHT + MEMENTO: TokenGrid instance manages both patterns
     this.grid = new TokenGrid(config);
     this.map = this.initializeMap(mapElementId);
 
@@ -256,6 +282,7 @@ export class TokenGame {
       return;
     }
 
+    // MEMENTO PATTERN: This call will save the token placement in modifiedCells
     this.grid.placeToken(coord, this.player.placeToken()!);
     this.ui.showNotif("Token placed on cell");
     this.ui.updateInvUI();
@@ -269,6 +296,8 @@ export class TokenGame {
     tokenMarker: L.Marker,
   ): void {
     this.player.pickUpToken(token);
+
+    // MEMENTO PATTERN: This call will save the token removal in modifiedCells
     this.grid.removeToken(coord);
     this.map.removeLayer(tokenMarker);
     this.ui.showNotif(`Collected token: ${token.value}`);
@@ -282,6 +311,9 @@ export class TokenGame {
     tokenMarker: L.Marker,
   ): void {
     const newToken = token.combine();
+
+    // FLYWEIGHT PATTERN: placeToken uses getOrCreateToken internally
+    // MEMENTO PATTERN: This call saves the new combined token placement
     this.grid.placeToken(coord, newToken);
     this.map.removeLayer(tokenMarker);
     this.renderer.renderGrid();
