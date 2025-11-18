@@ -153,11 +153,11 @@ export class UIManager {
     // Directional button handlers
     document.getElementById("move-north")?.addEventListener(
       "click",
-      () => this.handleBtnMove(-1, 0),
+      () => this.handleBtnMove(1, 0),
     );
     document.getElementById("move-south")?.addEventListener(
       "click",
-      () => this.handleBtnMove(1, 0),
+      () => this.handleBtnMove(-1, 0),
     );
     document.getElementById("move-east")?.addEventListener(
       "click",
@@ -278,7 +278,7 @@ export class UIManager {
       ? `Holding token: ${player.inventory.value}. ${
         player.inventory.value >= config.winningVal
           ? "🎉 YOU WIN!"
-          : "Click on a token of the same value to combine or an empty cell to place."
+          : "You may combine or place."
       }`
       : "Inventory empty. Click on tokens to collect.";
 

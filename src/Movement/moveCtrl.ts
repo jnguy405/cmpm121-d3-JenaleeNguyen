@@ -16,7 +16,9 @@ export class BtnMoveCtrl implements MoveCtrl {
     ((position: { lat: number; lng: number }) => void)[] = [];
   private isActive = false;
 
-  constructor(private game: TokenGame) {}
+  constructor(private game: TokenGame) {
+    this.setupKeyboardControls();
+  }
 
   start(): void {
     this.isActive = true;
@@ -63,6 +65,36 @@ export class BtnMoveCtrl implements MoveCtrl {
       lng: config.globalLatLng.lng + coord.j * config.cellSize +
         config.cellSize / 2,
     };
+  }
+
+  private setupKeyboardControls(): void {
+    document.addEventListener("keydown", (e) => {
+      if (this.getModeName() !== "buttons") return;
+      if (this.game.gameWon) return;
+
+      switch (e.key.toLowerCase()) {
+        case "w":
+        case "arrowup":
+          e.preventDefault();
+          this.btnMove(1, 0); // North
+          break;
+        case "s":
+        case "arrowdown":
+          e.preventDefault();
+          this.btnMove(-1, 0); // South
+          break;
+        case "a":
+        case "arrowleft":
+          e.preventDefault();
+          this.btnMove(0, -1); // West
+          break;
+        case "d":
+        case "arrowright":
+          e.preventDefault();
+          this.btnMove(0, 1); // East
+          break;
+      }
+    });
   }
 }
 

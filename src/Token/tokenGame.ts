@@ -24,7 +24,7 @@ export class TokenGame {
   public coordSys: "geolocation" | "grid" = "geolocation";
   private lastKnownGeo: { lat: number; lng: number } | null = null;
 
-  // FIX: Track when we last had valid geolocation data to determine if we're still in geolocation context
+  // Track when we last had valid geolocation data to determine if we're still in geolocation context
   private geoLastUpdated: number = 0;
   private readonly GEOLOCATION_TIMEOUT = 30000; // 30 seconds - consider geolocation data stale after this
 
@@ -46,7 +46,6 @@ export class TokenGame {
     this.playerMarker = this.createPlayerMarker();
     this.setupEventListeners();
 
-    // Now try to load saved game - this will override the defaults if successful
     const loaded = this.loadGame();
 
     // If no saved game OR saved game didn't set movement mode, default to geolocation
@@ -71,7 +70,8 @@ export class TokenGame {
     const map = L.map(mapElementId).setView(this.config.globalLatLng, 19);
 
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
+      minZoom: 18,
+      maxZoom: 20,
       attribution:
         '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
@@ -99,8 +99,6 @@ export class TokenGame {
       return;
     }
 
-    // FIX: Always update geolocation position and timestamp when we receive geolocation data
-    // This ensures we know we're in a geolocation context even if using button controls
     this.lastKnownGeo = position;
     this.geoLastUpdated = Date.now();
     this.coordSys = "geolocation"; // We're receiving real geolocation data
@@ -135,9 +133,10 @@ export class TokenGame {
 
     const marker = L.marker(initialLatLng, {
       icon: L.divIcon({
-        html: `<div class="player-marker">YOU</div>`,
+        html: `<div class="player-marker"> </div>`,
         className: "player-marker-container",
         iconSize: [40, 40],
+        iconAnchor: [15, 15],
       }),
     }).addTo(this.map);
 
@@ -148,84 +147,75 @@ export class TokenGame {
     return marker;
   }
 
+  private setupPopupHandlers(): void {
+    this.map.on("popupopen", (e) => {
+      const popup = e.popup;
+      const content = popup.getElement();
+
+      if (content) {
+        // Add click listeners to popup buttons
+        const buttons = content.querySelectorAll(".popup-action-btn");
+        buttons.forEach((button) => {
+          button.addEventListener("click", (event) => {
+            const target = event.target as HTMLElement;
+            const action = target.getAttribute("data-action");
+            const i = parseInt(target.getAttribute("data-i") || "0");
+            const j = parseInt(target.getAttribute("data-j") || "0");
+
+            if (action === "pickup") {
+              this.pickUpTokenFromPopup(i, j);
+            } else if (action === "combine") {
+              this.combineTokensFromPopup(i, j);
+            } else if (action === "place") {
+              this.placeTokenFromPopup(i, j);
+            }
+
+            this.map.closePopup();
+          });
+        });
+      }
+    });
+  }
+
   private setupEventListeners(): void {
     this.map.on("moveend", () => this.renderer.renderGrid()).on(
       "zoomend",
       () => this.renderer.renderGrid(),
     );
-  }
-
-  handleTokenClick(
-    coord: GridCoord,
-    token: Token,
-    tokenMarker: L.Marker,
-  ): void {
-    if (this.gameWon) {
-      this.ui.showNotif("Game completed! 🎉 Refresh to play again.");
-      return;
-    }
-
-    if (!this.player.isInRange(coord, this.config.interactionRadius)) {
-      this.ui.showNotif("Move closer to interact with this token");
-      return;
-    }
-
-    if (!this.player.inventory) {
-      this.collectToken(coord, token, tokenMarker);
-    } else if (this.player.inventory.canCombineWith(token)) {
-      this.combineTokens(coord, token, tokenMarker);
-    } else {
-      this.ui.showNotif(
-        `Cannot combine: holding ${this.player.inventory.value}, clicked ${token.value}`,
-      );
-    }
-  }
-
-  handleEmptyCellClick(coord: GridCoord): void {
-    if (
-      this.gameWon || !this.player.inventory ||
-      !this.player.isInRange(coord, this.config.interactionRadius)
-    ) {
-      if (!this.player.isInRange(coord, this.config.interactionRadius)) {
-        this.ui.showNotif("Move closer to place token here");
-      }
-      return;
-    }
-
-    // MEMENTO PATTERN: This call will save the token placement in modifiedCells
-    this.grid.placeToken(coord, this.player.placeToken()!);
-    this.ui.showNotif("Token placed on cell");
-    this.ui.updateInvUI();
-    this.renderer.renderGrid();
-    this.checkWin();
+    this.setupPopupHandlers();
   }
 
   private collectToken(
     coord: GridCoord,
     token: Token,
-    tokenMarker: L.Marker,
+    tokenMarker: L.Marker | null,
   ): void {
     this.player.pickUpToken(token);
 
     // MEMENTO PATTERN: This call will save the token removal in modifiedCells
     this.grid.removeToken(coord);
-    this.map.removeLayer(tokenMarker);
+    if (tokenMarker) {
+      this.map.removeLayer(tokenMarker);
+    }
     this.ui.showNotif(`Collected token: ${token.value}`);
     this.ui.updateInvUI();
+    this.renderer.renderGrid(); // Re-render to update the grid
     this.checkWin();
   }
 
   private combineTokens(
     coord: GridCoord,
     token: Token,
-    tokenMarker: L.Marker,
+    tokenMarker: L.Marker | null,
   ): void {
     const newToken = token.combine();
 
     // FLYWEIGHT PATTERN: placeToken uses getOrCreateToken internally
     // MEMENTO PATTERN: This call saves the new combined token placement
     this.grid.placeToken(coord, newToken);
-    this.map.removeLayer(tokenMarker);
+    if (tokenMarker) {
+      this.map.removeLayer(tokenMarker);
+    }
     this.renderer.renderGrid();
     this.player.placeToken();
 
@@ -417,5 +407,75 @@ export class TokenGame {
       location.reload();
     }
     return success;
+  }
+
+  // Popup action: Pick up token
+  public pickUpTokenFromPopup(i: number, j: number): void {
+    const coord = new GridCoord(i, j);
+    const token = this.grid.getOrSpawn(coord);
+
+    if (!token) {
+      this.ui.showNotif("No token found at this location");
+      return;
+    }
+
+    if (!this.player.isInRange(coord, this.config.interactionRadius)) {
+      this.ui.showNotif("Move closer to interact with this token");
+      return;
+    }
+
+    this.collectToken(coord, token, null);
+    this.closeAllPopups();
+  }
+
+  // Popup action: Combine tokens
+  public combineTokensFromPopup(i: number, j: number): void {
+    const coord = new GridCoord(i, j);
+    const token = this.grid.getOrSpawn(coord);
+
+    if (!token) {
+      this.ui.showNotif("No token found at this location");
+      return;
+    }
+
+    if (!this.player.isInRange(coord, this.config.interactionRadius)) {
+      this.ui.showNotif("Move closer to interact with this token");
+      return;
+    }
+
+    if (!this.player.inventory?.canCombineWith(token)) {
+      this.ui.showNotif("Cannot combine these tokens");
+      return;
+    }
+
+    this.combineTokens(coord, token, null);
+    this.closeAllPopups();
+  }
+
+  // Popup action: Place token
+  public placeTokenFromPopup(i: number, j: number): void {
+    const coord = new GridCoord(i, j);
+
+    if (!this.player.isInRange(coord, this.config.interactionRadius)) {
+      this.ui.showNotif("Move closer to place token");
+      return;
+    }
+
+    if (!this.player.inventory) {
+      this.ui.showNotif("No token to place");
+      return;
+    }
+
+    this.grid.placeToken(coord, this.player.placeToken()!);
+    this.ui.showNotif("Token placed on cell");
+    this.ui.updateInvUI();
+    this.renderer.renderGrid();
+    this.checkWin();
+    this.closeAllPopups();
+  }
+
+  // Helper to close all popups
+  private closeAllPopups(): void {
+    this.map.closePopup();
   }
 }

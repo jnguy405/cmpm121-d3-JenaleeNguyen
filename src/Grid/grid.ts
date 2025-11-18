@@ -14,13 +14,16 @@ export class GridCoord {
     return this.i === other.i && this.j === other.j;
   }
 
-  // Chebyshev distance (max of horizontal/vertical distance)
+  // Euclidean distance between cell centers
   distanceTo(other: GridCoord): number {
-    return Math.max(Math.abs(this.i - other.i), Math.abs(this.j - other.j));
+    return Math.sqrt(
+      Math.pow(this.i - other.i, 2) + Math.pow(this.j - other.j, 2),
+    );
   }
 
+  // Add a small buffer to include tokens that are visually within the circle
   isWithin(other: GridCoord, radius: number): boolean {
-    return this.distanceTo(other) <= radius;
+    return this.distanceTo(other) <= radius + 0.3; // IMPORTANT: Small buffer for visual alignment
   }
 }
 
@@ -28,6 +31,7 @@ export class GridCoord {
 export class GridRenderer {
   private gridLayers: L.Layer[] = []; // Grid cell rectangles
   private tokenMarkers: L.Marker[] = []; // Token markers
+  private rangeCircle: L.Circle | null = null; // Interaction range circle
 
   constructor(private game: TokenGame) {}
 
@@ -83,6 +87,38 @@ export class GridRenderer {
     return coords;
   }
 
+  // Draw the interaction range circle around the player
+  private drawInteractionRange(): void {
+    const { player, config, map } = this.game;
+
+    // Remove existing range circle
+    if (this.rangeCircle) {
+      map.removeLayer(this.rangeCircle);
+    }
+
+    // Get player's current position in lat/lng using grid position
+    const playerCenter = this.coordToLatLng(player.position);
+
+    // Calculate circle radius in meters (approximate conversion from grid cells)
+    const circleRadius = config.interactionRadius * config.cellSize * 111320; // Rough meters per degree
+
+    this.rangeCircle = L.circle(playerCenter, {
+      radius: circleRadius,
+      color: "#8a2be2",
+      weight: 4,
+      fillColor: "#9370db",
+      fillOpacity: 0.3,
+      className: "player-range-circle",
+    }).addTo(map);
+
+    // Add popup to explain the range
+    this.rangeCircle.bindPopup(`
+    <strong>Interaction Range</strong><br>
+    You can interact with tokens within this circle<br>
+    Radius: ${config.interactionRadius} grid cells
+  `);
+  }
+
   // Draw a single grid cell and its contents
   private drawGridCell(coord: GridCoord): void {
     const { game } = this;
@@ -91,32 +127,26 @@ export class GridRenderer {
       game.config.interactionRadius,
     );
     const bounds = this.getCellBounds(coord);
-    const token = game.grid.getOrSpawn(coord); // Get or spawn token using memento pattern
-
-    const isPlaceable = !token && interactable; // Can place token here
+    const token = game.grid.getOrSpawn(coord);
 
     // Create grid cell rectangle
     const cell = L.rectangle(bounds, {
-      color: interactable ? "green" : "gray",
-      weight: interactable ? 2 : 1,
-      fillColor: interactable ? "lightgreen" : "lightgray",
-      fillOpacity: 0.3,
-      interactive: isPlaceable, // Only clickable if placeable
+      color: interactable
+        ? "rgba(147, 112, 219, 0.5)"
+        : "rgba(128, 128, 128, 0.3)",
+      weight: interactable ? 1 : 0.5,
+      fillColor: interactable
+        ? "rgba(147, 112, 219, 0.1)"
+        : "rgba(128, 128, 128, 0.05)",
+      fillOpacity: 0.1,
+      interactive: true, // Always interactive for popups
     }).addTo(game.map);
 
-    const cellStatus = token ? `Contains token: ${token.value}` : "Empty cell";
-
-    cell.bindPopup(`
-    Cell (${coord.i},${coord.j})<br>
-    ${interactable ? "🟢 Interactable Area" : "⚫ Not Interactable"}<br>
-    ${cellStatus}
-  `);
-
-    // Handle clicks on empty, interactable cells
-    if (isPlaceable) {
-      cell.on("click", () => {
-        game.handleEmptyCellClick(coord);
-      });
+    // Set popup content based on whether cell has token
+    if (token) {
+      cell.bindPopup(this.tokenPopup(coord, token, interactable));
+    } else {
+      cell.bindPopup(this.emptyCellPopup(coord, interactable));
     }
 
     // Draw token if present
@@ -146,53 +176,127 @@ export class GridRenderer {
       }),
     }).addTo(game.map);
 
+    // Only open popup on click, don't handle the action directly
     marker.bindPopup(this.tokenPopup(coord, token, interactable));
-    marker.on("click", () => game.handleTokenClick(coord, token, marker));
 
     this.tokenMarkers.push(marker);
   }
 
-  // Generate popup content for token markers
+  // Generate popup content for token markers with action buttons
   private tokenPopup(
     coord: GridCoord,
     token: Token,
     interactable: boolean,
   ): string {
     const { game } = this;
-    let actionText = "Move closer to interact";
 
-    if (interactable && !game.gameWon) {
-      if (game.player.inventory) {
-        actionText = game.player.inventory.canCombineWith(token)
-          ? "Click to combine tokens!"
-          : "Click to collect token!";
-      } else {
-        actionText = "Click to collect token!";
-      }
-    } else if (game.gameWon) {
-      actionText = "Game completed! 🎉";
+    if (!interactable || game.gameWon) {
+      const statusText = game.gameWon
+        ? "Game completed! 🎉"
+        : "Move closer to interact";
+      return `
+      <strong>Token at (${coord.i},${coord.j})</strong><br>
+      Value: ${token.value}<br>
+      Status: ${interactable ? "💜 Within Range" : "🩶 Outside Range"}<br>
+      <em>${statusText}</em>
+    `;
+    }
+
+    let actionButtons = "";
+
+    if (!game.player.inventory) {
+      actionButtons = `
+      <button class="popup-action-btn pick-up-btn" data-action="pickup" data-i="${coord.i}" data-j="${coord.j}">
+        📥 Pick Up Token
+      </button>
+    `;
+    } else if (game.player.inventory.canCombineWith(token)) {
+      actionButtons = `
+      <button class="popup-action-btn combine-btn" data-action="combine" data-i="${coord.i}" data-j="${coord.j}">
+        🔄 Combine Tokens
+      </button>
+    `;
+    } else {
+      actionButtons = `
+      <button class="popup-action-btn pick-up-btn" data-action="pickup" data-i="${coord.i}" data-j="${coord.j}">
+        📥 Pick Up Token (Replace Current)
+      </button>
+    `;
     }
 
     return `
+    <div class="token-popup">
       <strong>Token at (${coord.i},${coord.j})</strong><br>
       Value: ${token.value}<br>
-      Status: ${interactable ? "🟢 Interactable" : "⚫ Not Interactable"}<br>
-      <em>${actionText}</em>
-    `;
+      Status: 💜 Within Range<br>
+      <div class="popup-actions">
+        ${actionButtons}
+      </div>
+    </div>
+  `;
   }
 
+  // Generate popup content for empty cells with action buttons
+  private emptyCellPopup(coord: GridCoord, interactable: boolean): string {
+    const { game } = this;
+
+    if (!interactable || game.gameWon) {
+      const statusText = game.gameWon
+        ? "Game completed! 🎉"
+        : "Move closer to interact";
+      return `
+      <strong>Empty Cell (${coord.i},${coord.j})</strong><br>
+      Status: ${interactable ? "💜 Within Range" : "🩶 Outside Range"}<br>
+      <em>${statusText}</em>
+    `;
+    }
+
+    if (game.player.inventory) {
+      return `
+      <div class="token-popup">
+        <strong>Empty Cell (${coord.i},${coord.j})</strong><br>
+        Status: 💜 Within Range<br>
+        <div class="popup-actions">
+          <button class="popup-action-btn place-btn" data-action="place" data-i="${coord.i}" data-j="${coord.j}">
+            📍 Place Token Here
+          </button>
+        </div>
+      </div>
+    `;
+    }
+
+    return `
+    <strong>Empty Cell (${coord.i},${coord.j})</strong><br>
+    Status: 💜 Within Range<br>
+    <em>No token to place</em>
+  `;
+  }
   // Remove all grid cells and tokens from the map
   clearGrid(): void {
     this.gridLayers.forEach((layer) => this.game.map.removeLayer(layer));
     this.tokenMarkers.forEach((marker) => this.game.map.removeLayer(marker));
+    if (this.rangeCircle) {
+      this.game.map.removeLayer(this.rangeCircle);
+      this.rangeCircle = null;
+    }
     this.gridLayers = [];
     this.tokenMarkers = [];
   }
 
-  // Main rendering method - clears and redraws visible grid
+  // Main rendering method - clears and redraws visible grid and range circle
   renderGrid(): void {
     this.clearGrid();
+    this.drawInteractionRange(); // Draw the circular range first
     const visibleCoords = this.getGridCoords();
     visibleCoords.forEach((coord) => this.drawGridCell(coord));
+  }
+
+  // Update just the range circle (for when player moves)
+  updateInteractionRange(): void {
+    if (this.rangeCircle) {
+      this.game.map.removeLayer(this.rangeCircle);
+      this.rangeCircle = null;
+    }
+    this.drawInteractionRange();
   }
 }
