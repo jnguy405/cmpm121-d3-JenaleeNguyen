@@ -2,6 +2,8 @@
 
 A location-based puzzle game combining elements of 4096, Threes, and Pokemon Go. Collect and combine tokens on a real-world map to reach target values.
 
+[Deployed Site](https://jnguy405.github.io/cmpm121-d3-JenaleeNguyen/)
+
 ## D3.a Development Phases 1-5
 
 1. **Map & Grid Foundation** - Leaflet map with grid cell system
