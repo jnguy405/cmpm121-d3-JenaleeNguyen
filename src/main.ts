@@ -2,7 +2,7 @@
 import "leaflet/dist/leaflet.css";
 import "./_leafletWorkaround.ts";
 import "./style.css";
-import { TokenGame } from "./Token/token.ts";
+import { TokenGame } from "./Token/tokenGame.ts";
 
 document.addEventListener("DOMContentLoaded", () => {
   new TokenGame("map");

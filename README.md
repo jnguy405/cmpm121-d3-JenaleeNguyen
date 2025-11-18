@@ -33,11 +33,13 @@ A location-based puzzle game combining elements of 4096, Threes, and Pokemon Go.
 - `PLAN.md`: Development plan and progress tracking.
 - `README.md`: Project overview (this file).
 - `src/main.ts`: Entry point — loads global styles/workarounds and starts the game by creating a `TokenGame` instance.
-- `src/Token/token.ts`: Token-domain module — exports `Token`, `TokenGrid`, and `TokenGame`. Contains token behavior, world storage (memento/flyweight), and main game coordination (map, input handling, win detection).
+- `src/Token/token.ts`: Token-domain module — exports `Token` and `TokenGrid`. Contains token behavior and world storage (memento/flyweight).
+- `src/Token/tokenGame.ts`: Helps export `TokenGame` - the main game coordination (map, input handling, win detection).
 - `src/Grid/grid.ts`: Grid-related module — exports `GridCoord` and `GridRenderer`. Handles discrete grid coordinates, viewport-to-grid math, and rendering cells/tokens onto the Leaflet map.
 - `src/Movement/moveCtrl.ts`: Defines movement interfaces (button & geolocation controls).
 - `src/Movement/moveManager.ts`: Handles switching between movement control systems.
-- `src/core.ts`: Core/shared classes — exports `GameConfig`, `Player`, and `UIManager`. Keeps shared configuration, player state & inventory logic, and DOM UI management.
+- `src/Game/core.ts`: Core/shared classes — exports `GameConfig`, `Player`, and `UIManager`. Keeps shared configuration, player state & inventory logic, and DOM UI management.
+- `src/Game/gameState.ts`: Game state persistence module — exports `GameStateManager`, serialization interfaces, and save/load functionality.
 - `src/style.css`: Styling for map and UI elements.
 - `src/_leafletWorkaround.ts`: Leaflet icon fixes/workarounds required by the build.
 - `src/_luck.ts`: Deterministic random number generator used for reproducible token spawning.

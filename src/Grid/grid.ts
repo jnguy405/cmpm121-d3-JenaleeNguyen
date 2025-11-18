@@ -1,7 +1,8 @@
 import L from "leaflet";
-import type { Token, TokenGame } from "../Token/token.ts";
+import type { Token } from "../Token/token.ts";
+import type { TokenGame } from "../Token/tokenGame.ts";
 
-// GridCoord: Represents a discrete grid-cell coordinate (i,j).
+// Represents discrete grid coordinates (i,j) for the game world
 export class GridCoord {
   constructor(readonly i: number, readonly j: number) {}
 
@@ -13,6 +14,7 @@ export class GridCoord {
     return this.i === other.i && this.j === other.j;
   }
 
+  // Chebyshev distance (max of horizontal/vertical distance)
   distanceTo(other: GridCoord): number {
     return Math.max(Math.abs(this.i - other.i), Math.abs(this.j - other.j));
   }
@@ -22,13 +24,14 @@ export class GridCoord {
   }
 }
 
-// GridRenderer: Rebuilds visible grid cells and token markers each frame.
+// Handles rendering grid cells and tokens on the Leaflet map
 export class GridRenderer {
-  private gridLayers: L.Layer[] = [];
-  private tokenMarkers: L.Marker[] = [];
+  private gridLayers: L.Layer[] = []; // Grid cell rectangles
+  private tokenMarkers: L.Marker[] = []; // Token markers
 
   constructor(private game: TokenGame) {}
 
+  // Convert grid coordinates to map lat/lng
   private coordToLatLng(coord: GridCoord): L.LatLng {
     const { config } = this.game;
     return L.latLng(
@@ -37,6 +40,7 @@ export class GridRenderer {
     );
   }
 
+  // Get the map bounds for a grid cell
   private getCellBounds(coord: GridCoord): L.LatLngBounds {
     const { config } = this.game;
     return L.latLngBounds([
@@ -51,10 +55,12 @@ export class GridRenderer {
     ]);
   }
 
+  // Get all grid coordinates currently visible in the map viewport
   private getGridCoords(): GridCoord[] {
     const { map, config } = this.game;
     const bounds = map.getBounds();
 
+    // Calculate visible grid range based on map bounds
     const iMin = Math.floor(
       (bounds.getSouthWest().lat - config.globalLatLng.lat) / config.cellSize,
     );
@@ -77,6 +83,7 @@ export class GridRenderer {
     return coords;
   }
 
+  // Draw a single grid cell and its contents
   private drawGridCell(coord: GridCoord): void {
     const { game } = this;
     const interactable = game.player.isInRange(
@@ -84,16 +91,17 @@ export class GridRenderer {
       game.config.interactionRadius,
     );
     const bounds = this.getCellBounds(coord);
-    const token = game.grid.getOrSpawn(coord);
+    const token = game.grid.getOrSpawn(coord); // Get or spawn token using memento pattern
 
-    const isPlaceable = !token && interactable;
+    const isPlaceable = !token && interactable; // Can place token here
 
+    // Create grid cell rectangle
     const cell = L.rectangle(bounds, {
       color: interactable ? "green" : "gray",
       weight: interactable ? 2 : 1,
       fillColor: interactable ? "lightgreen" : "lightgray",
       fillOpacity: 0.3,
-      interactive: isPlaceable,
+      interactive: isPlaceable, // Only clickable if placeable
     }).addTo(game.map);
 
     const cellStatus = token ? `Contains token: ${token.value}` : "Empty cell";
@@ -104,12 +112,14 @@ export class GridRenderer {
     ${cellStatus}
   `);
 
+    // Handle clicks on empty, interactable cells
     if (isPlaceable) {
       cell.on("click", () => {
         game.handleEmptyCellClick(coord);
       });
     }
 
+    // Draw token if present
     if (token) {
       this.drawToken(coord, token, interactable);
     }
@@ -117,6 +127,7 @@ export class GridRenderer {
     this.gridLayers.push(cell);
   }
 
+  // Draw a token marker at the specified grid coordinate
   private drawToken(
     coord: GridCoord,
     token: Token,
@@ -141,6 +152,7 @@ export class GridRenderer {
     this.tokenMarkers.push(marker);
   }
 
+  // Generate popup content for token markers
   private tokenPopup(
     coord: GridCoord,
     token: Token,
@@ -169,6 +181,7 @@ export class GridRenderer {
     `;
   }
 
+  // Remove all grid cells and tokens from the map
   clearGrid(): void {
     this.gridLayers.forEach((layer) => this.game.map.removeLayer(layer));
     this.tokenMarkers.forEach((marker) => this.game.map.removeLayer(marker));
@@ -176,6 +189,7 @@ export class GridRenderer {
     this.tokenMarkers = [];
   }
 
+  // Main rendering method - clears and redraws visible grid
   renderGrid(): void {
     this.clearGrid();
     const visibleCoords = this.getGridCoords();

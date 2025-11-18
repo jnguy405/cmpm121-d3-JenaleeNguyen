@@ -1,26 +1,26 @@
 import L from "leaflet";
-import { GridCoord } from "./Grid/grid.ts";
-import type { BtnMoveCtrl } from "./Movement/moveCtrl.ts";
-import type { Token, TokenGame } from "./Token/token.ts";
+import { GridCoord } from "../Grid/grid.ts";
+import type { BtnMoveCtrl } from "../Movement/moveCtrl.ts";
+import type { Token } from "../Token/token.ts";
+import type { TokenGame } from "../Token/tokenGame.ts";
 
-// GameConfig: Centralized configuration for world scale, cell size, spawn
-// probability, interaction radius, and win condition used by all systems.
+// Central config for world scale, cell size, spawn rates, etc.
 export class GameConfig {
   static readonly DEFAULT = new GameConfig(L.latLng(0, 0), 1e-4, 3, 0.15, 64);
 
   constructor(
-    public readonly globalLatLng: L.LatLng,
-    public readonly cellSize: number,
-    public readonly interactionRadius: number,
-    public readonly tokenSpawnProbability: number,
-    public readonly winningVal: number,
+    public readonly globalLatLng: L.LatLng, // World origin point
+    public readonly cellSize: number, // Size of each grid cell
+    public readonly interactionRadius: number, // How close player needs to be to interact
+    public readonly tokenSpawnProbability: number, // Chance for token to spawn
+    public readonly winningVal: number, // Target token value to win
   ) {}
 }
 
-// Player: Tracks player position, inventory, movement, and interaction range.
+// Player state: position, inventory, movement
 export class Player {
-  public position: GridCoord; // discrete grid position
-  public inventory: Token | null = null;
+  public position: GridCoord; // Current grid coordinates
+  public inventory: Token | null = null; // Currently held token
 
   constructor(initialPos: GridCoord) {
     this.position = initialPos;
@@ -52,24 +52,47 @@ export class Player {
   }
 }
 
-// UIManager: Handles DOM UI panels, notifications, inventory display, movement
-// controls, and win messages. Syncs UI with game state.
+// Manages all UI elements: inventory, controls, notifications
 export class UIManager {
   private invPanel: HTMLDivElement;
   private controlPanel: HTMLDivElement;
   private moveModeSelect: HTMLSelectElement;
+  private saveLoadPanel: HTMLDivElement;
 
   constructor(private game: TokenGame) {
+    // Create and append UI panels
     this.invPanel = this.createInvPanel();
     this.controlPanel = this.createCrtlPanel();
+    this.saveLoadPanel = this.createSaveLoadPanel();
     document.body.appendChild(this.invPanel);
     document.body.appendChild(this.controlPanel);
+    document.body.appendChild(this.saveLoadPanel);
 
+    // Set up movement mode dropdown
     const moveModeElement = document.getElementById("move-mode");
     if (!moveModeElement) throw new Error("move-mode element not found");
     this.moveModeSelect = moveModeElement as HTMLSelectElement;
 
     this.setupMoveEventListeners();
+    this.setupSaveLoadEventListeners();
+
+    // Delay UI sync to ensure game is fully initialized
+    setTimeout(() => {
+      this.syncMovementUI();
+      this.updateAll();
+    }, 150);
+  }
+
+  private syncMovementUI(): void {
+    this.updateMoveStatus();
+    const currCtrl = this.game.moveMgr.getCurrCtrl();
+    if (currCtrl && this.moveModeSelect) {
+      const modeName = currCtrl.getModeName();
+      this.moveModeSelect.value = modeName;
+      console.log(`UI synced to movement mode: ${modeName}`);
+    } else {
+      console.warn("Could not sync movement UI - control not available");
+    }
   }
 
   private createInvPanel(): HTMLDivElement {
@@ -99,18 +122,35 @@ export class UIManager {
                 <button id="move-south">↓ South</button>
             </div>
             <div id="player-pos">Position: (0, 0)</div>
-            <div id="move-status">Mode: Button Controls</div>
+            <div id="move-status">Mode: Geolocation</div>
         `;
     return panel;
   }
 
+  // Save/load game state controls
+  private createSaveLoadPanel(): HTMLDivElement {
+    const panel = document.createElement("div");
+    panel.id = "save-load-panel";
+    panel.innerHTML = `
+      <h3>Game State</h3>
+      <div class="save-load-controls">
+        <button id="save-game">Save Game</button>
+        <button id="load-game">Load Game</button>
+        <button id="new-game">New Game</button>
+      </div>
+      <div id="save-load-status">Ready</div>
+    `;
+    return panel;
+  }
+
   private setupMoveEventListeners(): void {
+    // Movement mode dropdown change
     this.moveModeSelect.addEventListener("change", (e) => {
       const mode = (e.target as HTMLSelectElement).value;
       this.switchMoveMode(mode);
     });
 
-    // Movement buttons
+    // Directional button handlers
     document.getElementById("move-north")?.addEventListener(
       "click",
       () => this.handleBtnMove(-1, 0),
@@ -129,6 +169,23 @@ export class UIManager {
     );
   }
 
+  // Save/load button handlers
+  private setupSaveLoadEventListeners(): void {
+    document.getElementById("save-game")?.addEventListener("click", () => {
+      this.game.saveGame();
+    });
+
+    document.getElementById("load-game")?.addEventListener("click", () => {
+      if (confirm("Load saved game? Current progress will be lost.")) {
+        location.reload(); // Reload page to reinitialize with saved state
+      }
+    });
+
+    document.getElementById("new-game")?.addEventListener("click", () => {
+      this.game.newGame();
+    });
+  }
+
   private handleBtnMove(deltaI: number, deltaJ: number): void {
     const currCtrl = this.game.moveMgr.getCurrCtrl();
     if (currCtrl?.getModeName() === "buttons") {
@@ -145,7 +202,7 @@ export class UIManager {
       this.showNotif(`Switched to ${mode} movement`);
       this.updateMoveStatus();
 
-      // Update dropdown to match actual control name
+      // Keep dropdown in sync with actual control state
       const currCtrl = this.game.moveMgr.getCurrCtrl();
       if (currCtrl && this.moveModeSelect) {
         this.moveModeSelect.value = currCtrl.getModeName();
@@ -154,9 +211,11 @@ export class UIManager {
       if (mode === "geolocation") {
         this.showNotif("Geolocation active - move in real world to play!");
       }
+
+      this.game.saveGame(); // Auto-save preference
     } else {
       this.showNotif(`Failed to switch to ${mode} mode`);
-      // Reset dropdown to current mode
+      // Reset dropdown on failure
       const currCtrl = this.game.moveMgr.getCurrCtrl();
       if (currCtrl && this.moveModeSelect) {
         this.moveModeSelect.value = currCtrl.getModeName();
@@ -169,12 +228,20 @@ export class UIManager {
     if (statusElement) {
       const currCtrl = this.game.moveMgr.getCurrCtrl();
       const modeName = currCtrl ? currCtrl.getModeName() : "unknown";
+
+      // Show context: buttons in geolocation area vs pure grid mode
+      const context =
+        modeName === "buttons" && this.game.coordSys === "geolocation"
+          ? " (Geolocation Area)"
+          : "";
+
       statusElement.textContent = `Mode: ${
         modeName.charAt(0).toUpperCase() + modeName.slice(1)
-      }`;
+      }${context}`;
     }
   }
 
+  // Temporary notification popup
   showNotif(message: string, duration = 3000): void {
     const existing = document.getElementById("game-notif");
     existing?.remove();
@@ -272,5 +339,13 @@ export class UIManager {
     this.updateInvUI();
     this.updatePlayerPos();
     this.updateMoveStatus();
+  }
+
+  updateSaveLoadStatus(message: string, isError: boolean = false): void {
+    const statusElement = document.getElementById("save-load-status");
+    if (statusElement) {
+      statusElement.textContent = message;
+      statusElement.style.color = isError ? "#ff4444" : "#44ff44";
+    }
   }
 }

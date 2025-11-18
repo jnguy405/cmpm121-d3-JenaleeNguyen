@@ -1,7 +1,7 @@
 import { GridCoord } from "../Grid/grid.ts";
-import type { TokenGame } from "../Token/token.ts";
+import type { TokenGame } from "../Token/tokenGame.ts";
 
-// MoveCtrl: Interface for movement control systems allowing different input methods.
+// Interface for different movement control systems
 export interface MoveCtrl {
   start(): void;
   stop(): void;
@@ -10,7 +10,7 @@ export interface MoveCtrl {
   getModeName(): string;
 }
 
-// BtnMoveCtrl: Button-based movement control using on-screen directional buttons.
+// Button-based movement: uses on-screen directional buttons for grid navigation
 export class BtnMoveCtrl implements MoveCtrl {
   private positionCallbacks:
     ((position: { lat: number; lng: number }) => void)[] = [];
@@ -41,6 +41,7 @@ export class BtnMoveCtrl implements MoveCtrl {
     return "buttons";
   }
 
+  // Handle button press movement (grid-based)
   public btnMove(deltaI: number, deltaJ: number): void {
     if (!this.isActive) return;
 
@@ -53,18 +54,19 @@ export class BtnMoveCtrl implements MoveCtrl {
     this.positionCallbacks.forEach((callback) => callback(newLatLng));
   }
 
+  // Convert grid coordinates to map coordinates
   private gridCoordToLatLng(coord: GridCoord): { lat: number; lng: number } {
     const { config } = this.game;
     return {
       lat: config.globalLatLng.lat + coord.i * config.cellSize +
-        config.cellSize / 2,
+        config.cellSize / 2, // Center of cell
       lng: config.globalLatLng.lng + coord.j * config.cellSize +
         config.cellSize / 2,
     };
   }
 }
 
-// GeoMoveCtrl: Geolocation-based movement using browser location API for real-world movement.
+// Real-world movement: uses device GPS for location-based gameplay
 export class GeoMoveCtrl implements MoveCtrl {
   private positionCallbacks:
     ((position: { lat: number; lng: number }) => void)[] = [];
@@ -79,6 +81,7 @@ export class GeoMoveCtrl implements MoveCtrl {
 
     this.isActive = true;
     if ("geolocation" in navigator) {
+      // Start watching device position
       this.watchId = navigator.geolocation.watchPosition(
         (position) => {
           const newPos = {
@@ -92,9 +95,9 @@ export class GeoMoveCtrl implements MoveCtrl {
           console.error("Geolocation error:", error);
         },
         {
-          enableHighAccuracy: true,
-          maximumAge: 30000,
-          timeout: 27000,
+          enableHighAccuracy: true, // Use GPS if available
+          maximumAge: 30000, // Accept cached positions up to 30s old
+          timeout: 27000, // Wait up to 27s for position
         },
       );
     } else {

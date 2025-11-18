@@ -1,9 +1,6 @@
-import L from "leaflet";
 import luck from "../_luck.ts";
-import { GameConfig, Player, UIManager } from "../core.ts";
-import { GridCoord, GridRenderer } from "../Grid/grid.ts";
-import { BtnMoveCtrl, GeoMoveCtrl } from "../Movement/moveCtrl.ts";
-import { MoveManager } from "../Movement/moveManager.ts";
+import { GameConfig } from "../Game/core.ts";
+import { GridCoord } from "../Grid/grid.ts";
 
 // Token: Simple value object representing a token in a cell.
 export class Token {
@@ -126,214 +123,24 @@ export class TokenGrid {
   getAllTokens(): Map<string, Token> {
     return new Map(this.tokens);
   }
-}
 
-// TokenGame: Coordinates all subsystems (player, grid, renderer, UI, map).
-export class TokenGame {
-  public readonly config: GameConfig;
-  public readonly player: Player;
-  public readonly grid: TokenGrid; // Contains both Flyweight and Memento patterns
-  public readonly map: L.Map;
-  public gameWon: boolean = false;
-
-  public readonly ui: UIManager;
-  public readonly renderer: GridRenderer;
-  public readonly moveMgr: MoveManager;
-  private playerMarker: L.Marker;
-
-  constructor(mapElementId: string, config: GameConfig = GameConfig.DEFAULT) {
-    this.config = config;
-    this.player = new Player(new GridCoord(0, 0));
-
-    // FLYWEIGHT + MEMENTO: TokenGrid instance manages both patterns
-    this.grid = new TokenGrid(config);
-    this.map = this.initializeMap(mapElementId);
-
-    this.moveMgr = new MoveManager(this);
-    this.initMoveCtrls();
-
-    this.ui = new UIManager(this);
-    this.renderer = new GridRenderer(this);
-
-    this.playerMarker = this.createPlayerMarker();
-    this.setupEventListeners();
-    this.ui.updateAll();
-    this.renderer.renderGrid();
-
-    this.moveMgr.start();
+  // PERSISTENCE: Getter for modifiedCells to allow serialization
+  getModifiedCells(): Map<string, { tokenValue: number | null }> {
+    return new Map(this.modifiedCells);
   }
 
-  private initializeMap(mapElementId: string): L.Map {
-    const map = L.map(mapElementId).setView(this.config.globalLatLng, 19);
-
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution:
-        '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
-
-    return map;
-  }
-
-  private initMoveCtrls(): void {
-    const btnCtrl = new BtnMoveCtrl(this);
-    const geoCtrl = new GeoMoveCtrl(this);
-
-    this.moveMgr.regCtrl("buttons", btnCtrl);
-    this.moveMgr.regCtrl("geolocation", geoCtrl);
-
-    this.moveMgr.setPosHandler((position) => {
-      this.handlePosUpdate(position);
-    });
-
-    this.moveMgr.switchCtrl("geolocation");
-  }
-
-  private handlePosUpdate(position: { lat: number; lng: number }): void {
-    if (this.gameWon) {
-      this.ui.showNotif("Game completed! Movement disabled.");
-      return;
-    }
-
-    const newGridCoord = this.latLngToGridCoord(position);
-    this.player.position = newGridCoord;
-
-    const newLatLng = this.renderer["coordToLatLng"](this.player.position);
-    this.playerMarker.setLatLng(newLatLng);
-    this.map.panTo(newLatLng);
-
-    this.ui.updatePlayerPos();
-    this.ui.showNotif(
-      `Moved to (${this.player.position.i}, ${this.player.position.j})`,
-    );
-    this.renderer.renderGrid();
-  }
-
-  private latLngToGridCoord(position: { lat: number; lng: number }): GridCoord {
-    const { config } = this;
-    const i = Math.floor(
-      (position.lat - config.globalLatLng.lat) / config.cellSize,
-    );
-    const j = Math.floor(
-      (position.lng - config.globalLatLng.lng) / config.cellSize,
-    );
-    return new GridCoord(i, j);
-  }
-
-  private createPlayerMarker(): L.Marker {
-    const initialLatLng = this.renderer["coordToLatLng"](this.player.position);
-
-    const marker = L.marker(initialLatLng, {
-      icon: L.divIcon({
-        html: `<div class="player-marker">YOU</div>`,
-        className: "player-marker-container",
-        iconSize: [40, 40],
-      }),
-    }).addTo(this.map);
-
-    marker.bindPopup(
-      `Player Location - Center (${this.player.position.i},${this.player.position.j})<br>Interaction Radius: ${this.config.interactionRadius} cells`,
-    );
-
-    return marker;
-  }
-
-  private setupEventListeners(): void {
-    this.map.on("moveend", () => this.renderer.renderGrid()).on(
-      "zoomend",
-      () => this.renderer.renderGrid(),
-    );
-  }
-
-  handleTokenClick(
-    coord: GridCoord,
-    token: Token,
-    tokenMarker: L.Marker,
+  // PERSISTENCE: Setter for modifiedCells to allow deserialization
+  setModifiedCells(
+    modifiedCells: Map<string, { tokenValue: number | null }>,
   ): void {
-    if (this.gameWon) {
-      this.ui.showNotif("Game completed! 🎉 Refresh to play again.");
-      return;
-    }
+    this.modifiedCells = new Map(modifiedCells);
 
-    if (!this.player.isInRange(coord, this.config.interactionRadius)) {
-      this.ui.showNotif("Move closer to interact with this token");
-      return;
-    }
-
-    if (!this.player.inventory) {
-      this.collectToken(coord, token, tokenMarker);
-    } else if (this.player.inventory.canCombineWith(token)) {
-      this.combineTokens(coord, token, tokenMarker);
-    } else {
-      this.ui.showNotif(
-        `Cannot combine: holding ${this.player.inventory.value}, clicked ${token.value}`,
-      );
-    }
-  }
-
-  handleEmptyCellClick(coord: GridCoord): void {
-    if (
-      this.gameWon || !this.player.inventory ||
-      !this.player.isInRange(coord, this.config.interactionRadius)
-    ) {
-      if (!this.player.isInRange(coord, this.config.interactionRadius)) {
-        this.ui.showNotif("Move closer to place token here");
+    // Rebuild tokens map from modifiedCells for active tokens
+    this.tokens.clear();
+    modifiedCells.forEach((value, coord) => {
+      if (value.tokenValue !== null) {
+        this.tokens.set(coord, this.getOrCreateToken(value.tokenValue));
       }
-      return;
-    }
-
-    // MEMENTO PATTERN: This call will save the token placement in modifiedCells
-    this.grid.placeToken(coord, this.player.placeToken()!);
-    this.ui.showNotif("Token placed on cell");
-    this.ui.updateInvUI();
-    this.renderer.renderGrid();
-    this.checkWin();
-  }
-
-  private collectToken(
-    coord: GridCoord,
-    token: Token,
-    tokenMarker: L.Marker,
-  ): void {
-    this.player.pickUpToken(token);
-
-    // MEMENTO PATTERN: This call will save the token removal in modifiedCells
-    this.grid.removeToken(coord);
-    this.map.removeLayer(tokenMarker);
-    this.ui.showNotif(`Collected token: ${token.value}`);
-    this.ui.updateInvUI();
-    this.checkWin();
-  }
-
-  private combineTokens(
-    coord: GridCoord,
-    token: Token,
-    tokenMarker: L.Marker,
-  ): void {
-    const newToken = token.combine();
-
-    // FLYWEIGHT PATTERN: placeToken uses getOrCreateToken internally
-    // MEMENTO PATTERN: This call saves the new combined token placement
-    this.grid.placeToken(coord, newToken);
-    this.map.removeLayer(tokenMarker);
-    this.renderer.renderGrid();
-    this.player.placeToken();
-
-    this.ui.showNotif(`Combined tokens! Created value ${newToken.value}`);
-    this.ui.updateInvUI();
-    this.checkWin();
-  }
-
-  private checkWin(): void {
-    if (this.gameWon) return;
-
-    const hasWinningToken =
-      this.player.hasWinningToken(this.config.winningVal) ||
-      this.grid.hasWinningToken(this.config.winningVal);
-
-    if (hasWinningToken) {
-      this.gameWon = true;
-      this.ui.showWinMsg();
-    }
+    });
   }
 }

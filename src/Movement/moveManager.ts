@@ -1,4 +1,4 @@
-import type { TokenGame } from "../Token/token.ts";
+import type { TokenGame } from "../Token/tokenGame.ts";
 import type { MoveCtrl } from "./moveCtrl.ts";
 
 // MoveManager: Facade that manages switching between different movement control systems.
@@ -29,6 +29,16 @@ export class MoveManager {
     const newCtrl = this.controls.get(modeName);
     if (!newCtrl) {
       console.error(`Movement control '${modeName}' not found`);
+      // Fallback to geolocation if the requested mode doesn't exist
+      const fallbackCtrl = this.controls.get("geolocation");
+      if (fallbackCtrl) {
+        console.log(`Falling back to geolocation control`);
+        this.currentCtrl = fallbackCtrl;
+        if (this.isActive) {
+          fallbackCtrl.start();
+        }
+        return true;
+      }
       return false;
     }
 
