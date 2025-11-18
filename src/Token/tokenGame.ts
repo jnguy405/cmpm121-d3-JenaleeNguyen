@@ -31,11 +31,11 @@ export class TokenGame {
   constructor(mapElementId: string, config: GameConfig = GameConfig.DEFAULT) {
     this.config = config;
     this.gameStateManager = new GameStateManager(config);
-    this.player = new Player(new GridCoord(0, 0));
 
     // FLYWEIGHT + MEMENTO: TokenGrid instance manages both patterns
-    this.grid = new TokenGrid(config);
     this.map = this.initializeMap(mapElementId);
+    this.player = new Player(new GridCoord(0, 0));
+    this.grid = new TokenGrid(config);
 
     this.moveMgr = new MoveManager(this);
     this.initMoveCtrls();

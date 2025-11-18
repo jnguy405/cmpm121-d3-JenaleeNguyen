@@ -68,7 +68,8 @@ body {
 
 .leaflet-popup-content {
   margin: 15px 20px !important;
-  font-family: "Bubblegum Sans", cursive !important;
+  font-family:
+    "Bubblegum Sans", "Comic Sans MS", cursive, sans-serif !important;
   font-size: 14px !important;
   line-height: 1.4 !important;
   color: white !important;
@@ -148,7 +149,8 @@ body {
   text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.5);
   box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.4);
   transition: all 0.3s ease;
-  font-family: "Bubblegum Sans", cursive;
+  font-family:
+    "Bubblegum Sans", "Comic Sans MS", cursive, sans-serif !important;
 }
 
 .token-interactable {
@@ -271,7 +273,8 @@ body {
   min-width: 200px;
   border: 3px solid #8a2be2;
   color: white;
-  font-family: "Bubblegum Sans", cursive;
+  font-family:
+    "Bubblegum Sans", "Comic Sans MS", cursive, sans-serif !important;
 }
 
 #control-panel h3 {
@@ -307,7 +310,8 @@ body {
   min-width: 60px;
   backdrop-filter: blur(5px);
   transition: all 0.3s ease;
-  font-family: "Bubblegum Sans", cursive;
+  font-family:
+    "Bubblegum Sans", "Comic Sans MS", cursive, sans-serif !important;
   font-size: 14px;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
@@ -344,7 +348,8 @@ body {
   min-width: 200px;
   border: 3px solid #8a2be2;
   color: white;
-  font-family: "Bubblegum Sans", cursive;
+  font-family:
+    "Bubblegum Sans", "Comic Sans MS", cursive, sans-serif !important;
 }
 
 #save-load-panel h3 {
@@ -373,7 +378,8 @@ body {
   transition: all 0.3s ease;
   backdrop-filter: blur(5px);
   border: 2px solid rgba(255, 255, 255, 0.2);
-  font-family: "Bubblegum Sans", cursive;
+  font-family:
+    "Bubblegum Sans", "Comic Sans MS", cursive, sans-serif !important;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
@@ -421,179 +427,301 @@ body {
   background: rgba(255, 255, 255, 0.1);
   color: white;
   backdrop-filter: blur(5px);
-  font-family: "Bubblegum Sans", cursive;
+  font-family:
+    "Bubblegum Sans", "Comic Sans MS", cursive, sans-serif !important;
 }
 
 .movement-mode-selector select option {
   background: #6a5acd;
   color: white;
-  font-family: "Bubblegum Sans", cursive;
-}
+  font-family:
+    "Bubblegum Sans", "Comic Sans MS", cursive, sans-serif !important;
 
-#move-status {
-  font-size: 12px;
-  color: #d8bfd8;
-  text-align: center;
-  margin-top: 12px;
-  font-weight: bold;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-/* Popup Action Buttons */
-.popup-action-btn {
-  display: block;
-  width: 100%;
-  padding: 8px 12px;
-  margin: 5px 0;
-  border: none;
-  border-radius: 6px;
-  font-family: "Bubblegum Sans", cursive;
-  font-size: 14px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.pick-up-btn {
-  background: linear-gradient(135deg, #aa9ef5, #775fd5);
-  color: rgb(255, 255, 255);
-}
-
-.combine-btn {
-  background: linear-gradient(135deg, #aa9ef5, #775fd5);
-  color: white;
-}
-
-.place-btn {
-  background: linear-gradient(135deg, #aa9ef5, #775fd5);
-  color: white;
-}
-
-.popup-action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.popup-action-btn:active {
-  transform: translateY(0);
-}
-
-.token-popup {
-  text-align: center;
-}
-
-.popup-actions {
-  margin-top: 10px;
-}
-
-/* ===== ANIMATIONS & EFFECTS ===== */
-@keyframes pulse {
-  0% {
-    transform: translate(-50%, -50%) rotate(45deg) scale(1);
-    opacity: 0.6;
-  }
-  50% {
-    transform: translate(-50%, -50%) rotate(45deg) scale(1.2);
-    opacity: 0.3;
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(45deg) scale(1);
-    opacity: 0.6;
-  }
-}
-
-/* Game Notifications */
-#game-notification {
-  pointer-events: none;
-  font-family: "Bubblegum Sans", cursive;
-}
-
-#game-notification div {
-  animation: fadeInOut 3s ease-in-out;
-  background: linear-gradient(135deg, #6a5acd, #9370db);
-  border: 3px solid #8a2be2;
-  color: white;
-  padding: 15px 25px;
-  border-radius: 20px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-  font-size: 16px;
-  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.5);
-}
-
-@keyframes fadeInOut {
-  0% {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-20px);
-  }
-  15% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  85% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-20px);
-  }
-}
-
-/* Win Message */
-#win-message {
-  pointer-events: none;
-  font-family: "Bubblegum Sans", cursive;
-}
-
-#win-message div {
-  animation: fadeIn 0.5s ease-in-out;
-  background: linear-gradient(135deg, #6a5acd, #9370db);
-  border: 4px solid #8a2be2;
-  color: white;
-  padding: 30px 40px;
-  border-radius: 25px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  text-align: center;
-  font-size: 24px;
-  font-weight: bold;
-  text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);
-  letter-spacing: 0.5px;
-}
-
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8);
-  }
-  100% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
-/* ===== RESPONSIVE DESIGN ===== */
-@media (max-width: 768px) {
-  #inventory-panel,
-  #control-panel,
-  #save-load-panel {
-    padding: 12px;
-    min-width: 170px;
-  }
-
-  #inventory-panel {
-    width: 180px;
-    height: 180px;
-  }
-
-  .movement-buttons button {
-    min-width: 50px;
-    padding: 6px 10px;
+  #move-status {
     font-size: 12px;
+    color: #d8bfd8;
+    text-align: center;
+    margin-top: 12px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
   }
 
-  #inventory-panel h3,
-  #control-panel h3,
-  #save-load-panel h3 {
+  /* Popup Action Buttons */
+  .popup-action-btn {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    margin: 5px 0;
+    border: none;
+    border-radius: 6px;
+    font-family:
+      "Bubblegum Sans", "Comic Sans MS", cursive, sans-serif !important;
     font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .pick-up-btn {
+    background: linear-gradient(135deg, #aa9ef5, #775fd5);
+    color: rgb(255, 255, 255);
+  }
+
+  .combine-btn {
+    background: linear-gradient(135deg, #aa9ef5, #775fd5);
+    color: white;
+  }
+
+  .place-btn {
+    background: linear-gradient(135deg, #aa9ef5, #775fd5);
+    color: white;
+  }
+
+  .popup-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .popup-action-btn:active {
+    transform: translateY(0);
+  }
+
+  .token-popup {
+    text-align: center;
+  }
+
+  .popup-actions {
+    margin-top: 10px;
+  }
+
+  /* ===== ANIMATIONS & EFFECTS ===== */
+  @keyframes pulse {
+    0% {
+      transform: translate(-50%, -50%) rotate(45deg) scale(1);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translate(-50%, -50%) rotate(45deg) scale(1.2);
+      opacity: 0.3;
+    }
+    100% {
+      transform: translate(-50%, -50%) rotate(45deg) scale(1);
+      opacity: 0.6;
+    }
+  }
+
+  /* Game Notifications */
+  #game-notification {
+    pointer-events: none;
+    font-family:
+      "Bubblegum Sans", "Comic Sans MS", cursive, sans-serif !important;
+  }
+
+  #game-notification div {
+    animation: fadeInOut 3s ease-in-out;
+    background: linear-gradient(135deg, #6a5acd, #9370db);
+    border: 3px solid #8a2be2;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 20px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    font-size: 16px;
+    text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.5);
+  }
+
+  @keyframes fadeInOut {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-20px);
+    }
+    15% {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    85% {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-20px);
+    }
+  }
+
+  /* Win Message */
+  #win-message {
+    pointer-events: none;
+    font-family:
+      "Bubblegum Sans", "Comic Sans MS", cursive, sans-serif !important;
+  }
+
+  #win-message div {
+    animation: fadeIn 0.5s ease-in-out;
+    background: linear-gradient(135deg, #6a5acd, #9370db);
+    border: 4px solid #8a2be2;
+    color: white;
+    padding: 30px 40px;
+    border-radius: 25px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);
+    letter-spacing: 0.5px;
+  }
+
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.8);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  /* ===== RESPONSIVE DESIGN ===== */
+  /* Mobile devices (phones, less than 768px) */
+  @media (max-width: 768px) {
+    /* Make panels larger */
+    #inventory-panel,
+    #control-panel,
+    #save-load-panel {
+      padding: 20px !important; /* Increased padding */
+      min-width: 220px !important; /* Wider panels */
+      border-radius: 25px !important; /* More rounded */
+    }
+
+    #inventory-panel {
+      width: 240px !important; /* Wider */
+      height: 260px !important; /* Taller */
+    }
+
+    /* Larger text for mobile */
+    #inventory-panel h3,
+    #control-panel h3,
+    #save-load-panel h3 {
+      font-size: 20px !important; /* Larger headers */
+      margin-bottom: 15px !important;
+    }
+
+    /* Larger buttons */
+    .movement-buttons button {
+      min-width: 70px !important; /* Wider buttons */
+      padding: 12px 16px !important; /* More padding */
+      font-size: 16px !important; /* Larger text */
+      border-radius: 20px !important; /* More rounded */
+    }
+
+    /* Larger inventory slot */
+    #inventory-slot {
+      height: 100px !important; /* Taller */
+      padding: 15px !important; /* More padding */
+      font-size: 18px !important; /* Larger text */
+      border-radius: 20px !important; /* More rounded */
+    }
+
+    .inventory-token {
+      width: 60px !important; /* Larger token */
+      height: 60px !important;
+      font-size: 24px !important; /* Larger number */
+    }
+
+    /* Larger status text */
+    #interaction-status,
+    #player-pos,
+    #move-status,
+    #save-load-status {
+      font-size: 14px !important; /* Larger text */
+      margin-top: 15px !important;
+    }
+
+    /* Larger movement mode selector */
+    .movement-mode-selector label {
+      font-size: 14px !important;
+      margin-bottom: 8px !important;
+    }
+
+    .movement-mode-selector select {
+      padding: 10px !important;
+      font-size: 14px !important;
+      border-radius: 12px !important;
+    }
+
+    /* Adjust positions for larger panels */
+    #inventory-panel {
+      bottom: 15px !important;
+      left: 15px !important;
+    }
+
+    #control-panel {
+      bottom: 15px !important;
+      right: 15px !important;
+    }
+
+    #save-load-panel {
+      top: 15px !important;
+      right: 15px !important;
+    }
+
+    /* Larger popup action buttons */
+    .popup-action-btn {
+      padding: 12px 16px !important;
+      font-size: 16px !important;
+      border-radius: 10px !important;
+      margin: 8px 0 !important;
+    }
+
+    /* Larger tokens on map */
+    .token {
+      width: 40px !important;
+      height: 40px !important;
+      font-size: 16px !important;
+    }
+
+    /* Larger player marker */
+    .player-marker {
+      width: 36px !important;
+      height: 36px !important;
+    }
+
+    .player-marker::after {
+      width: 10px !important;
+      height: 10px !important;
+    }
+  }
+
+  /* Extra small mobile devices (phones, less than 480px) */
+  @media (max-width: 480px) {
+    /* Even larger for very small screens */
+    #inventory-panel,
+    #control-panel,
+    #save-load-panel {
+      min-width: 400px !important;
+      padding: 25px !important;
+    }
+
+    #inventory-panel {
+      width: 260px !important;
+      height: 280px !important;
+    }
+
+    .movement-buttons button {
+      min-width: 80px !important;
+      padding: 14px 18px !important;
+      font-size: 18px !important;
+    }
+
+    #inventory-panel h3,
+    #control-panel h3,
+    #save-load-panel h3 {
+      font-size: 22px !important;
+    }
+
+    .movement-buttons div {
+      flex-direction: column;
+      gap: 8px;
+    }
   }
 }

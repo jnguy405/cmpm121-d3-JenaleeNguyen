@@ -6,7 +6,7 @@ import type { TokenGame } from "../Token/tokenGame.ts";
 
 // Central config for world scale, cell size, spawn rates, etc.
 export class GameConfig {
-  static readonly DEFAULT = new GameConfig(L.latLng(0, 0), 1e-4, 3, 0.15, 64);
+  static readonly DEFAULT = new GameConfig(L.latLng(0, 0), 1e-4, 3, 0.2, 64);
 
   constructor(
     public readonly globalLatLng: L.LatLng, // World origin point
