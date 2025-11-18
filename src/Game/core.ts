@@ -89,9 +89,6 @@ export class UIManager {
     if (currCtrl && this.moveModeSelect) {
       const modeName = currCtrl.getModeName();
       this.moveModeSelect.value = modeName;
-      console.log(`UI synced to movement mode: ${modeName}`);
-    } else {
-      console.warn("Could not sync movement UI - control not available");
     }
   }
 
@@ -228,16 +225,9 @@ export class UIManager {
     if (statusElement) {
       const currCtrl = this.game.moveMgr.getCurrCtrl();
       const modeName = currCtrl ? currCtrl.getModeName() : "unknown";
-
-      // Show context: buttons in geolocation area vs pure grid mode
-      const context =
-        modeName === "buttons" && this.game.coordSys === "geolocation"
-          ? " (Geolocation Area)"
-          : "";
-
       statusElement.textContent = `Mode: ${
         modeName.charAt(0).toUpperCase() + modeName.slice(1)
-      }${context}`;
+      }`;
     }
   }
 
