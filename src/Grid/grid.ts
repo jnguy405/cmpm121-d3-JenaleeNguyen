@@ -299,4 +299,12 @@ export class GridRenderer {
     }
     this.drawInteractionRange();
   }
+
+  // In GridRenderer class
+  public handleResize(): void {
+    if (this.game.map) {
+      this.game.map.invalidateSize();
+      this.renderGrid();
+    }
+  }
 }

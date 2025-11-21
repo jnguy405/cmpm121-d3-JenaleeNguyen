@@ -54,6 +54,12 @@ export class TokenGame {
       this.moveMgr.switchCtrl("geolocation");
     }
 
+    // CRITICAL: Force map size validation after everything is loaded
+    setTimeout(() => {
+      this.map.invalidateSize(true);
+      this.renderer.renderGrid();
+    }, 500);
+
     // Update UI and start movement manager
     this.ui.updateAll();
     this.renderer.renderGrid();
@@ -182,6 +188,30 @@ export class TokenGame {
       "zoomend",
       () => this.renderer.renderGrid(),
     );
+
+    // ADD THESE MOBILE-SPECIFIC LISTENERS (Deno-compatible)
+    globalThis.addEventListener("focus", () => {
+      console.log("Window focused - refreshing map");
+      setTimeout(() => {
+        this.map.invalidateSize();
+        this.renderer.renderGrid();
+      }, 100);
+    });
+
+    globalThis.addEventListener("resize", () => {
+      console.log("Window resized - invalidating map size");
+      this.map.invalidateSize();
+    });
+
+    // Handle orientation changes on mobile
+    globalThis.addEventListener("orientationchange", () => {
+      console.log("Orientation changed - refreshing map");
+      setTimeout(() => {
+        this.map.invalidateSize(true); // true = animate
+        this.renderer.renderGrid();
+      }, 300);
+    });
+
     this.setupPopupHandlers();
   }
 
