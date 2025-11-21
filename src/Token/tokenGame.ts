@@ -220,14 +220,30 @@ export class TokenGame {
     token: Token,
     tokenMarker: L.Marker | null,
   ): void {
-    this.player.pickUpToken(token);
+    const { player, grid } = this;
 
-    // MEMENTO PATTERN: This call will save the token removal in modifiedCells
-    this.grid.removeToken(coord);
+    // Store the old token before picking up the new one
+    const oldToken = player.inventory;
+
+    // Pick up the new token
+    player.pickUpToken(token);
+
+    // Remove the picked up token from the grid
+    grid.removeToken(coord);
+
+    // If there was an old token, place it where the new token was
+    if (oldToken) {
+      grid.placeToken(coord, oldToken);
+      this.ui.showNotif(`Swapped tokens: ${oldToken.value} → ${token.value}`);
+    } else {
+      this.ui.showNotif(`Collected token: ${token.value}`);
+    }
+
+    // Remove the visual marker if it exists
     if (tokenMarker) {
       this.map.removeLayer(tokenMarker);
     }
-    this.ui.showNotif(`Collected token: ${token.value}`);
+
     this.ui.updateInvUI();
     this.renderer.renderGrid(); // Re-render to update the grid
     this.checkWin();
@@ -246,8 +262,11 @@ export class TokenGame {
     if (tokenMarker) {
       this.map.removeLayer(tokenMarker);
     }
-    this.renderer.renderGrid();
+
+    // CLEAR the player's inventory after combining
     this.player.placeToken();
+
+    this.renderer.renderGrid();
 
     this.ui.showNotif(`Combined tokens! Created value ${newToken.value}`);
     this.ui.updateInvUI();

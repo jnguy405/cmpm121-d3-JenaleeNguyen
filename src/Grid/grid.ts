@@ -195,45 +195,45 @@ export class GridRenderer {
         ? "Game completed! 🎉"
         : "Move closer to interact";
       return `
-      <strong>Token at (${coord.i},${coord.j})</strong><br>
-      Value: ${token.value}<br>
-      Status: ${interactable ? "💜 Within Range" : "🩶 Outside Range"}<br>
-      <em>${statusText}</em>
-    `;
+    <strong>Token at (${coord.i},${coord.j})</strong><br>
+    Value: ${token.value}<br>
+    Status: ${interactable ? "💜 Within Range" : "🩶 Outside Range"}<br>
+    <em>${statusText}</em>
+  `;
     }
 
     let actionButtons = "";
 
     if (!game.player.inventory) {
       actionButtons = `
-      <button class="popup-action-btn pick-up-btn" data-action="pickup" data-i="${coord.i}" data-j="${coord.j}">
-        📥 Pick Up Token
-      </button>
-    `;
+    <button class="popup-action-btn pick-up-btn" data-action="pickup" data-i="${coord.i}" data-j="${coord.j}">
+      📥 Pick Up Token
+    </button>
+  `;
     } else if (game.player.inventory.canCombineWith(token)) {
       actionButtons = `
-      <button class="popup-action-btn combine-btn" data-action="combine" data-i="${coord.i}" data-j="${coord.j}">
-        🔄 Combine Tokens
-      </button>
-    `;
+    <button class="popup-action-btn combine-btn" data-action="combine" data-i="${coord.i}" data-j="${coord.j}">
+      🔄 Combine Tokens
+    </button>
+  `;
     } else {
       actionButtons = `
-      <button class="popup-action-btn pick-up-btn" data-action="pickup" data-i="${coord.i}" data-j="${coord.j}">
-        📥 Pick Up Token (Replace Current)
-      </button>
-    `;
+    <button class="popup-action-btn pick-up-btn" data-action="pickup" data-i="${coord.i}" data-j="${coord.j}">
+      📥 Pick Up Token (Replace Current)
+    </button>
+  `;
     }
 
     return `
-    <div class="token-popup">
-      <strong>Token at (${coord.i},${coord.j})</strong><br>
-      Value: ${token.value}<br>
-      Status: 💜 Within Range<br>
-      <div class="popup-actions">
-        ${actionButtons}
-      </div>
+  <div class="token-popup">
+    <strong>Token at (${coord.i},${coord.j})</strong><br>
+    Value: ${token.value}<br>
+    Status: 💜 Within Range<br>
+    <div class="popup-actions">
+      ${actionButtons}
     </div>
-  `;
+  </div>
+`;
   }
 
   // Generate popup content for empty cells with action buttons
